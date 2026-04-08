@@ -1,17 +1,32 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
+from datetime import datetime
 
-# Base model for shared properties
-class PetBase(SQLModel):
-    name: str
-    species: str
-    age: int
-    owner_email: Optional[str] = None
-
-# Table model (Database)
-class Pet(PetBase, table=True):
+class Dog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(min_length=1)
+    breed: str = Field(min_length=2)
+    chip_number: Optional[str] = None
+    emergency_vet_name: Optional[str] = None
+    emergency_vet_phone: Optional[str] = None
 
-# Schema for creating a pet (API Input)
-class PetCreate(PetBase):
-    pass
+class WeightEntry(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    weight_kg: float = Field(gt=0)
+    date: datetime = Field(default_factory=datetime.now)
+
+class FeedingLog(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    amount_grams: int = Field(gt=0)
+    food_type: str = Field(min_length=2)
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+class MedicalRecord(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    treatment_name: str = Field(min_length=2)
+    category: str
+    summary: Optional[str] = None
+    diagnosis: Optional[str] = None
+    administered_date: datetime = Field(default_factory=datetime.now)
+    next_due_date: Optional[datetime] = None
+    is_completed: bool = Field(default=True)

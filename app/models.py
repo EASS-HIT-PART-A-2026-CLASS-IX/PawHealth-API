@@ -5,9 +5,8 @@ from datetime import datetime
 class Dog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(min_length=1)
-    breed: str
+    breed: str = Field(min_length=2)
     chip_number: Optional[str] = None
-    # Emergency Info
     emergency_vet_name: Optional[str] = None
     emergency_vet_phone: Optional[str] = None
 
@@ -19,14 +18,14 @@ class WeightEntry(SQLModel, table=True):
 class FeedingLog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     amount_grams: int = Field(gt=0)
-    food_type: str
+    food_type: str = Field(min_length=2)
     timestamp: datetime = Field(default_factory=datetime.now)
 
 class MedicalRecord(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    treatment_name: str
-    category: str  # Vaccine, Medication, Surgery, Checkup
-    summary: Optional[str] = None  # Detailed visit summary
+    treatment_name: str = Field(min_length=2)
+    category: str
+    summary: Optional[str] = None
     diagnosis: Optional[str] = None
     administered_date: datetime = Field(default_factory=datetime.now)
     next_due_date: Optional[datetime] = None

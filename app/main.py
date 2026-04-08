@@ -1,73 +1,72 @@
+import time
 import logging
-from fastapi import FastAPI, Depends, HTTPException
-from sqlmodel import Session, select, func
+from fastapi import FastAPI, Depends, Request
+from sqlmodel import Session, select
 from typing import List
-from datetime import datetime, date
+from datetime import datetime
 from app.database import create_db_and_tables, get_session
 from app.models import Dog, FeedingLog, WeightEntry, MedicalRecord
 
-app = FastAPI(title="PawHealth Pro", version="3.0.0")
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("PawHealth")
+
+app = FastAPI(
+    title="PawHealth Pro",
+    description="Advanced Veterinary Management API with proactive intelligence.",
+    version="3.0.0"
+)
 
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
 
-# --- Emergency & Profile ---
-@app.get("/emergency", tags=["Emergency"])
-def get_emergency_info(session: Session = Depends(get_session)):
-    """Quick access to emergency vet contact details."""
-    dog = session.exec(select(Dog)).first()
-    if not dog or not dog.emergency_vet_name:
-        return {"msg": "No emergency contact set"}
-    return {
-        "vet_name": dog.emergency_vet_name,
-        "phone": dog.emergency_vet_phone,
-        "action": "CALL NOW"
-    }
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration = (time.time() - start_time) * 1000
+    logger.info(f"REQ: {request.method} {request.url.path} | DUR: {duration:.2f}ms | STATUS: {response.status_code}")
+    return response
 
-# --- Smart Task Engine ---
+@app.get("/health", tags=["System"])
+def health_check():
+    return {"status": "healthy", "service": "PawHealth"}
+
 @app.get("/tasks/today", tags=["Intelligence"])
 def get_daily_tasks(session: Session = Depends(get_session)):
-    """Automatically generates a checklist for today's pet care."""
     tasks = []
     today = datetime.now().date()
-
-    # 1. Check Feeding (Did Joey eat enough today?)
-    today_start = datetime.combine(today, datetime.min.time())
-    feedings = session.exec(select(FeedingLog).where(FeedingLog.timestamp >= today_start)).all()
-    total_eaten = sum(f.amount_grams for f in feedings)
-    if total_eaten < 200: # Target 200g
-        tasks.append({"task": "Feeding", "status": "PENDING", "msg": f"Joey only ate {total_eaten}g out of 200g"})
-
-    # 2. Check Upcoming/Overdue Medical
     upcoming = session.exec(select(MedicalRecord).where(MedicalRecord.next_due_date <= today)).all()
     for item in upcoming:
         tasks.append({
             "task": f"Medical: {item.treatment_name}",
-            "status": "URGENT",
-            "msg": f"Scheduled for: {item.next_due_date.date()}"
+            "severity": "URGENT",
+            "due_date": str(item.next_due_date.date())
         })
+    return {"date": str(today), "pending_tasks": tasks, "total_count": len(tasks)}
 
-    return {"date": today, "tasks": tasks, "count": len(tasks)}
-
-# --- Standard Endpoints (Dog, Feeding, Medical) ---
-@app.post("/dog", tags=["Profile"])
-def update_dog_profile(dog: Dog, session: Session = Depends(get_session)):
+@app.post("/dog", tags=["Profile"], response_model=Dog)
+def register_dog(dog: Dog, session: Session = Depends(get_session)):
     session.add(dog)
     session.commit()
     session.refresh(dog)
     return dog
 
-@app.post("/medical", tags=["Medical"])
-def add_medical_record(record: MedicalRecord, session: Session = Depends(get_session)):
-    session.add(record)
-    session.commit()
-    session.refresh(record)
-    return record
+@app.get("/dog", tags=["Profile"], response_model=List[Dog])
+def list_dogs(session: Session = Depends(get_session)):
+    return session.exec(select(Dog)).all()
 
-@app.post("/feeding", tags=["Nutrition"])
+@app.post("/feeding", tags=["Nutrition"], response_model=FeedingLog)
 def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
     session.add(log)
     session.commit()
     session.refresh(log)
     return log
+
+@app.post("/weight", tags=["Health"], response_model=WeightEntry)
+def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
+    session.add(entry)
+    session.commit()
+    session.refresh(entry)
+    return entry

@@ -16,28 +16,26 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
-app = FastAPI(title="PawHealth Pro", version="3.2.0", lifespan=lifespan)
-
-@app.middleware("http")
-async def log_performance(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration = (time.time() - start_time) * 1000
-    logger.info(f"Path: {request.url.path} | Duration: {duration:.2f}ms")
-    return response
+app = FastAPI(title="PawHealth Pro", version="3.3.0", lifespan=lifespan)
 
 @app.get("/health", tags=["System"])
 async def health_check():
-    return {"status": "healthy", "version": "3.2.0"}
+    return {"status": "healthy", "version": "3.3.0"}
 
-@app.get("/intelligence/tasks", tags=["Intelligence"])
-async def get_daily_alerts(session: Session = Depends(get_session)):
-    """Smart engine to alert about upcoming vaccines or medical tasks."""
-    today = datetime.now()
-    statement = select(MedicalRecord).where(MedicalRecord.next_due_date <= today)
-    overdue = session.exec(statement).all()
-    tasks = [{"task": f"Overdue: {m.treatment_name}", "due": m.next_due_date} for m in overdue]
-    return {"alerts": tasks, "count": len(tasks)}
+@app.get("/emergency/sos", tags=["Emergency"])
+async def get_emergency_info(session: Session = Depends(get_session)):
+    """Instant access to chip numbers and emergency vet contacts."""
+    statement = select(Dog)
+    dogs = session.exec(statement).all()
+    sos_data = []
+    for dog in dogs:
+        sos_data.append({
+            "dog_name": dog.name,
+            "chip": dog.chip_number,
+            "vet_name": dog.emergency_vet_name,
+            "vet_phone": dog.emergency_vet_phone
+        })
+    return {"emergency_contacts": sos_data}
 
 @app.post("/dog", tags=["Profile"], response_model=Dog)
 async def register_dog(dog: Dog, session: Session = Depends(get_session)):
@@ -50,11 +48,6 @@ async def list_dogs(session: Session = Depends(get_session), search: Optional[st
         statement = statement.where(or_(Dog.name.contains(search), Dog.breed.contains(search)))
     return session.exec(statement).all()
 
-@app.post("/feeding", tags=["Nutrition"], response_model=FeedingLog)
-async def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
-    """Track food or snacks."""
-    session.add(log); session.commit(); session.refresh(log); return log
-
 @app.post("/weight", tags=["Health"], response_model=WeightEntry)
 async def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
     if entry.weight_kg <= 0:
@@ -64,3 +57,7 @@ async def log_weight(entry: WeightEntry, session: Session = Depends(get_session)
 @app.post("/medical", tags=["Health"], response_model=MedicalRecord)
 async def add_medical(record: MedicalRecord, session: Session = Depends(get_session)):
     session.add(record); session.commit(); session.refresh(record); return record
+
+@app.post("/feeding", tags=["Nutrition"], response_model=FeedingLog)
+async def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
+    session.add(log); session.commit(); session.refresh(log); return log

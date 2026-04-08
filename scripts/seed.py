@@ -1,7 +1,6 @@
 from sqlmodel import Session, select
 from app.database import engine, create_db_and_tables
-from app.models import Dog, MedicalRecord
-from datetime import datetime, timedelta
+from app.models import Dog
 
 def run_seed():
     create_db_and_tables()
@@ -9,22 +8,18 @@ def run_seed():
         if session.exec(select(Dog)).first():
             return
         
-        # Seed Joey
-        joey = Dog(name="Joey", breed="Poodle", is_favorite=True)
-        session.add(joey)
-        
-        # Seed a detailed Medical Visit
-        checkup = MedicalRecord(
-            treatment_name="Annual Checkup",
-            category="Routine",
-            summary="Joey was a very good boy. Heart rate is normal, ears are clean.",
-            diagnosis="Perfectly healthy poodle",
-            next_due_date=datetime.now() + timedelta(days=365)
+        # Seed Dog with full Emergency Info
+        joey = Dog(
+            name="Joey", 
+            breed="Poodle", 
+            is_favorite=True,
+            chip_number="985-111-000",
+            emergency_vet_name="Dr. Barkwell (24/7 Clinic)",
+            emergency_vet_phone="+972-50-000-0000"
         )
-        session.add(checkup)
-        
+        session.add(joey)
         session.commit()
-        print("Successfully seeded with detailed medical records! 🏥🐾")
+        print("Successfully seeded with Emergency SOS info! 🚨🐾")
 
 if __name__ == "__main__":
     run_seed()

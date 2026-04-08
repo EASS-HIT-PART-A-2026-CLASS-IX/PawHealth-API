@@ -1,13 +1,6 @@
-# Python-generated files
+.venv/
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
+*.pyc
+.pytest_cache/
 *.db
-paw_health.db
-*.db
+.env

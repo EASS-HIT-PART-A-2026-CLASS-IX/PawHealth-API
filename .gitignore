@@ -9,3 +9,5 @@ wheels/
 # Virtual environments
 .venv
 *.db
+paw_health.db
+*.db

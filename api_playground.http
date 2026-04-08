@@ -1,32 +1,32 @@
-### Get all pets
-GET http://127.0.0.1:8000/pets/
-Accept: application/json
+### System Health
+GET http://127.0.0.1:8000/health
 
-### Add a new dog
-POST http://127.0.0.1:8000/pets/
+### Register Joey
+POST http://127.0.0.1:8000/dog
 Content-Type: application/json
 
 {
-  "name": "Joey",
-  "species": "Dog (Poodle Mix)",
-  "age": 2,
-  "owner_email": "bar@example.com"
+    "name": "Joey",
+    "breed": "Poodle",
+    "is_favorite": true,
+    "chip_number": "123-ABC"
 }
 
-### Get specific pet (replace ID with actual ID from above)
-GET http://127.0.0.1:8000/pets/1
-Accept: application/json
+### Search for Poodles
+GET http://127.0.0.1:8000/dog?search=Poodle
 
-### Update a pet's age
-PUT http://127.0.0.1:8000/pets/1
+### Log Weight (Success)
+POST http://127.0.0.1:8000/weight
 Content-Type: application/json
 
 {
-  "name": "Joey",
-  "species": "Dog (Poodle Mix)",
-  "age": 3,
-  "owner_email": "bar@example.com"
+    "weight_kg": 7.5
 }
 
-### Delete a pet
-DELETE http://127.0.0.1:8000/pets/1
+### Log Weight (Fail - Validation)
+POST http://127.0.0.1:8000/weight
+Content-Type: application/json
+
+{
+    "weight_kg": -10
+}

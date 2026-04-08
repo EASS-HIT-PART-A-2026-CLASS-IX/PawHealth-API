@@ -1,32 +1,30 @@
-from sqlmodel import Session
+from sqlmodel import Session, select
 from app.database import engine, create_db_and_tables
-from app.models import Dog, MedicalRecord, FeedingLog
+from app.models import Dog, MedicalRecord
 from datetime import datetime, timedelta
 
 def run_seed():
     create_db_and_tables()
     with Session(engine) as session:
-        if session.query(Dog).first():
+        if session.exec(select(Dog)).first():
             return
         
-        # 1. Seed Dog
+        # Seed Joey
         joey = Dog(name="Joey", breed="Poodle", is_favorite=True)
         session.add(joey)
         
-        # 2. Seed Medical (Vaccine due today)
-        vaccine = MedicalRecord(
-            treatment_name="Rabies", 
-            category="Vaccine", 
-            next_due_date=datetime.now()
+        # Seed a detailed Medical Visit
+        checkup = MedicalRecord(
+            treatment_name="Annual Checkup",
+            category="Routine",
+            summary="Joey was a very good boy. Heart rate is normal, ears are clean.",
+            diagnosis="Perfectly healthy poodle",
+            next_due_date=datetime.now() + timedelta(days=365)
         )
-        session.add(vaccine)
-        
-        # 3. Seed Snack
-        snack = FeedingLog(amount_grams=15, food_type="Peanut Butter Treat")
-        session.add(snack)
+        session.add(checkup)
         
         session.commit()
-        print("Successfully seeded all modules: Profile, Medical, and Nutrition! 🐾")
+        print("Successfully seeded with detailed medical records! 🏥🐾")
 
 if __name__ == "__main__":
     run_seed()

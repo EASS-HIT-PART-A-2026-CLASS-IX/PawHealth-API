@@ -18,16 +18,21 @@ class WeightEntry(SQLModel, table=True):
     date: datetime = Field(default_factory=datetime.now)
 
 class FeedingLog(SQLModel, table=True):
-    """Tracking food and snacks consumption."""
     id: Optional[int] = Field(default=None, primary_key=True)
     amount_grams: int = Field(gt=0)
-    food_type: str = Field(min_length=2) # e.g., "Kibble", "Chicken Treat"
+    food_type: str = Field(min_length=2)
     timestamp: datetime = Field(default_factory=datetime.now)
 
 class MedicalRecord(SQLModel, table=True):
-    """Vaccines and medical treatments tracking."""
+    """Detailed medical records including visit summaries and diagnoses."""
     id: Optional[int] = Field(default=None, primary_key=True)
     treatment_name: str = Field(min_length=2)
-    category: str # e.g., "Vaccine", "Deworming"
+    category: str # e.g., "Vaccine", "Checkup", "Emergency"
+    
+    # New fields for detailed clinical tracking
+    summary: Optional[str] = None    # Notes about the visit
+    diagnosis: Optional[str] = None  # Clinical diagnosis
+    
     administered_date: datetime = Field(default_factory=datetime.now)
     next_due_date: Optional[datetime] = None
+    is_completed: bool = Field(default=True)

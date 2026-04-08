@@ -4,8 +4,10 @@ from datetime import datetime
 
 class Dog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(min_length=1)
-    breed: str = Field(min_length=2)
+    name: str = Field(min_length=1, index=True)
+    breed: str = Field(min_length=2, index=True)
+    is_favorite: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.now)
     chip_number: Optional[str] = None
     emergency_vet_name: Optional[str] = None
     emergency_vet_phone: Optional[str] = None
@@ -25,8 +27,5 @@ class MedicalRecord(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     treatment_name: str = Field(min_length=2)
     category: str
-    summary: Optional[str] = None
-    diagnosis: Optional[str] = None
     administered_date: datetime = Field(default_factory=datetime.now)
     next_due_date: Optional[datetime] = None
-    is_completed: bool = Field(default=True)

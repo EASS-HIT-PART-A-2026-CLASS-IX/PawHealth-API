@@ -1,14 +1,12 @@
 import time
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Request, HTTPException
-from sqlmodel import Session, select
-from typing import List
-from datetime import datetime
+from fastapi import FastAPI, Depends, Request, Query
+from sqlmodel import Session, select, or_
+from typing import List, Optional
 from app.database import create_db_and_tables, get_session
 from app.models import Dog, FeedingLog, WeightEntry, MedicalRecord
 
-# Setup professional logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PawHealth")
 
@@ -17,61 +15,29 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
-app = FastAPI(
-    title="PawHealth Pro",
-    description="Advanced Veterinary Management API with proactive intelligence.",
-    version="3.0.0",
-    lifespan=lifespan
-)
-
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration = (time.time() - start_time) * 1000
-    logger.info(f"REQ: {request.method} {request.url.path} | DUR: {duration:.2f}ms | STATUS: {response.status_code}")
-    return response
+app = FastAPI(title="PawHealth Pro", version="3.1.0", lifespan=lifespan)
 
 @app.get("/health", tags=["System"])
 def health_check():
-    return {"status": "healthy", "service": "PawHealth"}
+    return {"status": "healthy", "version": "3.1.0"}
 
-@app.get("/tasks/today", tags=["Intelligence"])
-def get_daily_tasks(session: Session = Depends(get_session)):
-    tasks = []
-    today = datetime.now().date()
-    upcoming = session.exec(select(MedicalRecord).where(MedicalRecord.next_due_date <= today)).all()
-    for item in upcoming:
-        tasks.append({
-            "task": f"Medical: {item.treatment_name}",
-            "severity": "URGENT",
-            "due_date": str(item.next_due_date.date())
-        })
-    return {"date": str(today), "pending_tasks": tasks, "total_count": len(tasks)}
+@app.get("/dog", tags=["Profile"], response_model=List[Dog])
+def list_dogs(
+    session: Session = Depends(get_session),
+    search: Optional[str] = Query(None, description="Search by name or breed"),
+    favorites_only: bool = Query(False)
+):
+    statement = select(Dog)
+    if search:
+        statement = statement.where(or_(Dog.name.contains(search), Dog.breed.contains(search)))
+    if favorites_only:
+        statement = statement.where(Dog.is_favorite == True)
+    return session.exec(statement).all()
 
 @app.post("/dog", tags=["Profile"], response_model=Dog)
 def register_dog(dog: Dog, session: Session = Depends(get_session)):
-    session.add(dog)
-    session.commit()
-    session.refresh(dog)
-    return dog
+    session.add(dog); session.commit(); session.refresh(dog); return dog
 
-@app.get("/dog", tags=["Profile"], response_model=List[Dog])
-def list_dogs(session: Session = Depends(get_session)):
-    return session.exec(select(Dog)).all()
-
-@app.post("/feeding", tags=["Nutrition"], response_model=FeedingLog)
-def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
-    session.add(log)
-    session.commit()
-    session.refresh(log)
-    return log
-
-@app.post("/weight", tags=["Health"], response_model=WeightEntry)
+@app.post("/weight", tags=["Health"])
 def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
-    if entry.weight_kg <= 0:
-        raise HTTPException(status_code=422, detail="Weight must be positive")
-    session.add(entry)
-    session.commit()
-    session.refresh(entry)
-    return entry
+    session.add(entry); session.commit(); session.refresh(entry); return entry

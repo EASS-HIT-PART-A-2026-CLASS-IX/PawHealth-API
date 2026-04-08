@@ -1,60 +1,40 @@
-# 🐾 PawHealth Pro - Smart Veterinary Management System (V3.0.0)
+# 🐾 PawHealth Pro - Ultimate Veterinary Management (V3.6.1)
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![SQLModel](https://img.shields.io/badge/ORM-SQLModel-blue?logo=python&logoColor=white)](https://sqlmodel.tiangolo.com)
-[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org)
-
-**PawHealth Pro** is an enterprise-grade backend solution for comprehensive pet healthcare. Unlike standard registries, it features a **Smart Task Engine** that actively monitors nutrition and medical schedules to ensure proactive care.
+PawHealth Pro is an enterprise-grade backend solution for comprehensive pet healthcare. It features a Smart Intelligence Engine that monitors nutrition, weight trends, and medical schedules.
 
 ## 🌟 Pro Features
-- **🧠 Smart Task Engine**: Automatically generates a daily checklist (e.g., "Joey needs 50g more food today", "Rabies vaccine due this week").
-- **🏥 Clinical Medical Records**: Detailed tracking of vet visits including summaries, diagnoses, and follow-up schedules.
-- **🚨 Emergency SOS Registry**: Instant access to emergency veterinary contacts and chip identification.
-- **📊 Real-time Health Analytics**: Aggregated insights into average feeding habits and weight trends.
-- **🛡️ Data Integrity**: Strict Pydantic validation for all health metrics (Weight > 0, non-empty records).
-- **⏱️ Performance Monitoring**: Integrated middleware logging request duration in milliseconds for high-frequency environments.
+- **🧠 Unified Activity Timeline:** Chronological feed of medical, feeding, and weight events.
+- **📸 Media Management:** Full support for profile picture uploads and static serving.
+- **🏥 Clinical Medical Records:** Detailed tracking of vet visits including summaries and diagnoses.
+- **🚨 Emergency SOS Registry:** Instant access to emergency contacts and chip IDs.
+- **🛡️ Data Integrity:** Strict relational mapping and Pydantic validation (Weight > 0).
 
 ## 🏗 System Architecture
-The project follows a modular architecture inspired by **Security Operations Centers (SOC)**, focusing on event logging and proactive alerting.
-
-```text
+\`\`\`text
 paw-health-api/
 ├── app/
-│   ├── main.py          # Intelligence Engine & API Routes
-│   ├── models.py        # Relational Schemas & Validation Rules
+│   ├── main.py          # API Engine & Routes
+│   ├── models.py        # Relational SQLModel Schemas
 │   ├── database.py      # Persistence Layer (SQLite)
-├── paw_health.db        # Production Database
-├── pyproject.toml       # Environment Configuration
-└── README.md            # Technical Documentation
-```
-
-## 🛠 Tech Stack
-- **Language**: Python 3.12+
-- **Framework**: FastAPI (Asynchronous logic)
-- **Database**: SQLModel (Modern SQLAlchemy + Pydantic wrapper)
-- **Log Management**: Python Logging with Custom Middleware
+├── scripts/
+│   ├── seed.py          # Automated Demo Data (Bonus)
+├── tests/
+│   ├── test_main.py     # Pytest Suite
+├── uploads/             # Image Storage
+└── README.md            # Documentation
+\`\`\`
 
 ## 🚦 Getting Started
-1. **Initialize Environment**:
-   ```bash
-   uv sync
-   ```
-2. **Launch System**:
-   ```bash
-   uv run uvicorn app.main:app --reload
-   ```
-3. **Interactive Documentation**:
-   Access the full API suite at `http://127.0.0.1:8000/docs`
-
-## 📝 Design Philosophy
-Developed for the **EASS-HIT** course, this project demonstrates advanced concepts in **RESTful API design**, **Database Normalization**, and **Business Logic Automation**.
-
----
-*Created by Bar Aizenberg - Passionate about Dog Health & Software Engineering.*
+1. **Initialize Environment:** \`uv sync\`
+2. **Seed Demo Data (Bonus):** \`PYTHONPATH=. uv run python scripts/seed.py\`
+3. **Launch System:** \`uv run uvicorn app.main:app --reload\`
+4. **Run Tests:** \`uv run pytest\`
 
 ## 🤖 AI Assistance
 This project was developed in collaboration with Gemini (Google). AI assisted in:
-- Designing the modular project architecture.
-- Implementing SQLModel schemas and relationship logic.
-- Configuring the Pytest suite with `StaticPool` for isolated DB testing.
-All outputs were manually reviewed, integrated, and verified through automated tests.
+- Designing the relational architecture and SQLModel relationships.
+- Implementing the Unified Timeline sorting logic.
+- Configuring the Pytest suite for robust validation checking.
+*All outputs were manually reviewed, integrated, and verified.*
+
+**Created by Bar Aizenberg - Passionate about Dog Health & Software Engineering.**

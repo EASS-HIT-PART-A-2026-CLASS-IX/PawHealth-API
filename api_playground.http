@@ -1,0 +1,32 @@
+### Get all pets
+GET http://127.0.0.1:8000/pets/
+Accept: application/json
+
+### Add a new dog
+POST http://127.0.0.1:8000/pets/
+Content-Type: application/json
+
+{
+  "name": "Joey",
+  "species": "Dog (Poodle Mix)",
+  "age": 2,
+  "owner_email": "bar@example.com"
+}
+
+### Get specific pet (replace ID with actual ID from above)
+GET http://127.0.0.1:8000/pets/1
+Accept: application/json
+
+### Update a pet's age
+PUT http://127.0.0.1:8000/pets/1
+Content-Type: application/json
+
+{
+  "name": "Joey",
+  "species": "Dog (Poodle Mix)",
+  "age": 3,
+  "owner_email": "bar@example.com"
+}
+
+### Delete a pet
+DELETE http://127.0.0.1:8000/pets/1

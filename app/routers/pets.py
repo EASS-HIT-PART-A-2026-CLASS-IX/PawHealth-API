@@ -18,3 +18,31 @@ def create_pet(pet: PetCreate, session: Session = Depends(get_session)):
 def read_pets(session: Session = Depends(get_session)):
     pets = session.exec(select(Pet)).all()
     return pets
+
+@router.get("/{pet_id}", response_model=Pet)
+def read_pet(pet_id: int, session: Session = Depends(get_session)):
+    pet = session.get(Pet, pet_id)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    return pet
+
+@router.put("/{pet_id}", response_model=Pet)
+def update_pet(pet_id: int, pet_update: PetCreate, session: Session = Depends(get_session)):
+    pet = session.get(Pet, pet_id)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    pet_data = pet_update.model_dump(exclude_unset=True)
+    pet.sqlmodel_update(pet_data)
+    session.add(pet)
+    session.commit()
+    session.refresh(pet)
+    return pet
+
+@router.delete("/{pet_id}")
+def delete_pet(pet_id: int, session: Session = Depends(get_session)):
+    pet = session.get(Pet, pet_id)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    session.delete(pet)
+    session.commit()
+    return {"message": "Pet deleted successfully"}

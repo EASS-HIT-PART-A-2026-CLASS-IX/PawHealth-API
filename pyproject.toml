@@ -1,0 +1,17 @@
+[project]
+name = "paw-health-api"
+version = "0.1.0"
+description = "Proactive Veterinary Management API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "sqlmodel>=0.0.22",
+    "uvicorn>=0.30.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+]

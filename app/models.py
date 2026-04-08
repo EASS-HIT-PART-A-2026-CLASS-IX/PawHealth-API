@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 
 class DogBase(SQLModel):
@@ -16,16 +16,16 @@ class Dog(DogBase, table=True):
     created_at: datetime = Field(default_factory=datetime.now)
 
 class WeightEntry(SQLModel, table=True):
-    """Tracking dog weight over time with strict validation."""
+    """Tracking dog weight with validation."""
     id: Optional[int] = Field(default=None, primary_key=True)
-    weight_kg: float = Field(gt=0) # Must be positive
+    weight_kg: float = Field(gt=0)
     date: datetime = Field(default_factory=datetime.now)
-    dog_id: Optional[int] = None # Preparation for EX3 relations
+    dog_id: Optional[int] = None
 
 class MedicalRecord(SQLModel, table=True):
-    """Medical history and vaccine tracking."""
+    """Medical history tracking."""
     id: Optional[int] = Field(default=None, primary_key=True)
     treatment_name: str = Field(min_length=2)
-    category: str # e.g., Vaccine, Surgery, Checkup
+    category: str
     administered_date: datetime = Field(default_factory=datetime.now)
     next_due_date: Optional[datetime] = None

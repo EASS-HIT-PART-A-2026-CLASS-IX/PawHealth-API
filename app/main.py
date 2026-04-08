@@ -1,13 +1,14 @@
 import time
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
 from sqlmodel import Session, select
 from typing import List
 from datetime import datetime
 from app.database import create_db_and_tables, get_session
 from app.models import Dog, FeedingLog, WeightEntry, MedicalRecord
 
+# Setup professional logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PawHealth")
 
@@ -41,7 +42,11 @@ def get_daily_tasks(session: Session = Depends(get_session)):
     today = datetime.now().date()
     upcoming = session.exec(select(MedicalRecord).where(MedicalRecord.next_due_date <= today)).all()
     for item in upcoming:
-        tasks.append({"task": f"Medical: {item.treatment_name}", "severity": "URGENT", "due_date": str(item.next_due_date.date())})
+        tasks.append({
+            "task": f"Medical: {item.treatment_name}",
+            "severity": "URGENT",
+            "due_date": str(item.next_due_date.date())
+        })
     return {"date": str(today), "pending_tasks": tasks, "total_count": len(tasks)}
 
 @app.post("/dog", tags=["Profile"], response_model=Dog)
@@ -64,6 +69,8 @@ def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
 
 @app.post("/weight", tags=["Health"], response_model=WeightEntry)
 def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
+    if entry.weight_kg <= 0:
+        raise HTTPException(status_code=422, detail="Weight must be positive")
     session.add(entry)
     session.commit()
     session.refresh(entry)

@@ -51,3 +51,10 @@ Developed for the **EASS-HIT** course, this project demonstrates advanced concep
 
 ---
 *Created by Bar Aizenberg - Passionate about Dog Health & Software Engineering.*
+
+## 🤖 AI Assistance
+This project was developed in collaboration with Gemini (Google). AI assisted in:
+- Designing the modular project architecture.
+- Implementing SQLModel schemas and relationship logic.
+- Configuring the Pytest suite with `StaticPool` for isolated DB testing.
+All outputs were manually reviewed, integrated, and verified through automated tests.

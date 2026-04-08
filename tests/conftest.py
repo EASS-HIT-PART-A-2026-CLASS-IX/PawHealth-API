@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from app.main import app
 from app.database import get_session
+from app.models import Pet  # <-- The missing import!
 
-# Use in-memory SQLite for fast, isolated tests
 sqlite_url = "sqlite://"
 engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
 

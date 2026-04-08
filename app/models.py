@@ -1,15 +1,15 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class Dog(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(min_length=1, index=True)
     breed: str = Field(min_length=2, index=True)
+    date_of_birth: Optional[date] = None # For age calculation
+    profile_picture: Optional[str] = None # Path to uploaded image
     is_favorite: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.now)
-    
-    # Emergency SOS Information
     chip_number: Optional[str] = None
     emergency_vet_name: Optional[str] = None
     emergency_vet_phone: Optional[str] = None

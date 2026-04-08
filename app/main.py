@@ -1,91 +1,74 @@
 import time
-import logging
-import csv
-import io
+import os
+import shutil
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Request, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Depends, Request, HTTPException, Query, File, UploadFile
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select, or_
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, date
 from app.database import create_db_and_tables, get_session
 from app.models import Dog, WeightEntry, MedicalRecord, FeedingLog
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("PawHealth")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    os.makedirs("uploads", exist_ok=True) # Ensure upload dir exists
     yield
 
-app = FastAPI(title="PawHealth Pro", version="3.4.0", lifespan=lifespan)
+app = FastAPI(title="PawHealth Ultimate", version="3.5.0", lifespan=lifespan)
 
-@app.get("/intelligence/health-score/{dog_id}", tags=["Intelligence"])
-async def get_dog_health_score(dog_id: int, session: Session = Depends(get_session)):
-    """Calculate a real-time health score based on medical and nutrition data."""
-    # Logic: Start with 100, deduct points for overdue vaccines or lack of feeding
-    score = 100
-    recommendations = []
-    
-    # Check overdue vaccines
-    overdue = session.exec(select(MedicalRecord).where(MedicalRecord.next_due_date < datetime.now())).all()
-    if overdue:
-        score -= len(overdue) * 15
-        recommendations.append(f"Visit the vet for {overdue[0].treatment_name}")
-        
-    # Check feeding (did the dog eat in the last 24h?)
-    last_day = datetime.now() - timedelta(days=1)
-    feeding = session.exec(select(FeedingLog).where(FeedingLog.timestamp > last_day)).all()
-    if not feeding:
-        score -= 30
-        recommendations.append("No feeding logged in the last 24 hours!")
-        
-    return {
-        "score": max(score, 0),
-        "status": "Excellent" if score > 80 else "Needs Attention",
-        "recommendations": recommendations
-    }
+# Mount static files so we can view the dog photos in the browser
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-@app.get("/export/medical", tags=["System"])
-async def export_medical_records(session: Session = Depends(get_session)):
-    """Export all medical records to a professional CSV format."""
-    records = session.exec(select(MedicalRecord)).all()
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["ID", "Treatment", "Category", "Summary", "Diagnosis", "Date", "Next Due"])
+@app.get("/dog/{dog_id}/analytics", tags=["Intelligence"])
+async def get_dog_analytics(dog_id: int, session: Session = Depends(get_session)):
+    """Calculate life stage and health metrics."""
+    dog = session.get(Dog, dog_id)
+    if not dog: raise HTTPException(status_code=44, detail="Dog not found")
     
-    for r in records:
-        writer.writerow([r.id, r.treatment_name, r.category, r.summary, r.diagnosis, r.administered_date, r.next_due_date])
+    # Calculate Age & Life Stage
+    life_stage = "Unknown"
+    if dog.date_of_birth:
+        age_years = (date.today() - dog.date_of_birth).days // 365
+        if age_years < 2: life_stage = "Puppy"
+        elif age_years < 7: life_stage = "Adult"
+        else: life_stage = "Senior"
     
-    output.seek(0)
-    return StreamingResponse(
-        output, 
-        media_type="text/csv", 
-        headers={"Content-Disposition": "attachment; filename=medical_history.csv"}
-    )
+    return {"name": dog.name, "age_estimate": age_years, "life_stage": life_stage}
 
-# Standard CRUD continues below...
+@app.post("/dog/{dog_id}/upload-photo", tags=["Profile"])
+async def upload_dog_photo(dog_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
+    """Upload and save a profile picture for a dog."""
+    dog = session.get(Dog, dog_id)
+    if not dog: raise HTTPException(status_code=404, detail="Dog not found")
+    
+    file_path = f"uploads/dog_{dog_id}_{file.filename}"
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    dog.profile_picture = file_path
+    session.add(dog); session.commit(); session.refresh(dog)
+    return {"info": "Photo uploaded successfully", "path": file_path}
+
+@app.get("/timeline", tags=["Intelligence"])
+async def get_unified_timeline(session: Session = Depends(get_session)):
+    """A unified chronological feed of ALL activities (Feeding, Medical, Weight)."""
+    feedings = session.exec(select(FeedingLog)).all()
+    medical = session.exec(select(MedicalRecord)).all()
+    weights = session.exec(select(WeightEntry)).all()
+    
+    timeline = []
+    for f in feedings: timeline.append({"type": "Feeding", "time": f.timestamp, "detail": f.food_type})
+    for m in medical: timeline.append({"type": "Medical", "time": m.administered_date, "detail": m.treatment_name})
+    for w in weights: timeline.append({"type": "Weight", "time": w.date, "detail": f"{w.weight_kg}kg"})
+    
+    return sorted(timeline, key=lambda x: x['time'], reverse=True)
+
+# Standard endpoints below...
+@app.get("/health", tags=["System"])
+def health(): return {"status": "online"}
+
 @app.post("/dog", tags=["Profile"], response_model=Dog)
-async def register_dog(dog: Dog, session: Session = Depends(get_session)):
+def add_dog(dog: Dog, session: Session = Depends(get_session)):
     session.add(dog); session.commit(); session.refresh(dog); return dog
-
-@app.get("/dog", tags=["Profile"], response_model=List[Dog])
-async def list_dogs(session: Session = Depends(get_session), search: Optional[str] = Query(None)):
-    statement = select(Dog)
-    if search:
-        statement = statement.where(or_(Dog.name.contains(search), Dog.breed.contains(search)))
-    return session.exec(statement).all()
-
-@app.get("/emergency/sos", tags=["Emergency"])
-async def get_sos_info(session: Session = Depends(get_session)):
-    dogs = session.exec(select(Dog)).all()
-    return [{"dog": d.name, "chip": d.chip_number, "vet": d.emergency_vet_phone} for d in dogs]
-
-@app.post("/medical", tags=["Health"])
-async def add_medical(record: MedicalRecord, session: Session = Depends(get_session)):
-    session.add(record); session.commit(); session.refresh(record); return record
-
-@app.post("/feeding", tags=["Nutrition"])
-async def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
-    session.add(log); session.commit(); session.refresh(log); return log

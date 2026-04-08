@@ -1,6 +1,7 @@
 import time
 import os
 import shutil
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request, HTTPException, Query, File, UploadFile
 from fastapi.staticfiles import StaticFiles
@@ -10,36 +11,25 @@ from datetime import datetime, date
 from app.database import create_db_and_tables, get_session
 from app.models import Dog, WeightEntry, MedicalRecord, FeedingLog
 
+# Ensure uploads directory exists BEFORE mounting
+os.makedirs("uploads", exist_ok=True)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
-    os.makedirs("uploads", exist_ok=True) # Ensure upload dir exists
     yield
 
-app = FastAPI(title="PawHealth Ultimate", version="3.5.0", lifespan=lifespan)
+app = FastAPI(title="PawHealth Ultimate", version="3.5.1", lifespan=lifespan)
 
-# Mount static files so we can view the dog photos in the browser
+# Mount static files for dog photos
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-@app.get("/dog/{dog_id}/analytics", tags=["Intelligence"])
-async def get_dog_analytics(dog_id: int, session: Session = Depends(get_session)):
-    """Calculate life stage and health metrics."""
-    dog = session.get(Dog, dog_id)
-    if not dog: raise HTTPException(status_code=44, detail="Dog not found")
-    
-    # Calculate Age & Life Stage
-    life_stage = "Unknown"
-    if dog.date_of_birth:
-        age_years = (date.today() - dog.date_of_birth).days // 365
-        if age_years < 2: life_stage = "Puppy"
-        elif age_years < 7: life_stage = "Adult"
-        else: life_stage = "Senior"
-    
-    return {"name": dog.name, "age_estimate": age_years, "life_stage": life_stage}
+@app.get("/health", tags=["System"])
+async def health_check():
+    return {"status": "healthy", "version": "3.5.1"}
 
 @app.post("/dog/{dog_id}/upload-photo", tags=["Profile"])
 async def upload_dog_photo(dog_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
-    """Upload and save a profile picture for a dog."""
     dog = session.get(Dog, dog_id)
     if not dog: raise HTTPException(status_code=404, detail="Dog not found")
     
@@ -53,7 +43,6 @@ async def upload_dog_photo(dog_id: int, file: UploadFile = File(...), session: S
 
 @app.get("/timeline", tags=["Intelligence"])
 async def get_unified_timeline(session: Session = Depends(get_session)):
-    """A unified chronological feed of ALL activities (Feeding, Medical, Weight)."""
     feedings = session.exec(select(FeedingLog)).all()
     medical = session.exec(select(MedicalRecord)).all()
     weights = session.exec(select(WeightEntry)).all()
@@ -65,10 +54,19 @@ async def get_unified_timeline(session: Session = Depends(get_session)):
     
     return sorted(timeline, key=lambda x: x['time'], reverse=True)
 
-# Standard endpoints below...
-@app.get("/health", tags=["System"])
-def health(): return {"status": "online"}
-
 @app.post("/dog", tags=["Profile"], response_model=Dog)
-def add_dog(dog: Dog, session: Session = Depends(get_session)):
+async def register_dog(dog: Dog, session: Session = Depends(get_session)):
     session.add(dog); session.commit(); session.refresh(dog); return dog
+
+@app.get("/dog", tags=["Profile"], response_model=List[Dog])
+async def list_dogs(session: Session = Depends(get_session), search: Optional[str] = Query(None)):
+    statement = select(Dog)
+    if search:
+        statement = statement.where(or_(Dog.name.contains(search), Dog.breed.contains(search)))
+    return session.exec(statement).all()
+
+@app.post("/weight", tags=["Health"], response_model=WeightEntry)
+async def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
+    if entry.weight_kg <= 0:
+        raise HTTPException(status_code=422, detail="Weight must be positive")
+    session.add(entry); session.commit(); session.refresh(entry); return entry

@@ -1,69 +1,44 @@
-# 🐾 PawHealth Pro - Ultimate Veterinary Management System
+# 🐾 PawHealth Pro - Smart Veterinary Management System
 
-![Python](https://img.shields.io/badge/python-3.12+-blue.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?logo=fastapi&logoColor=white)
-![SQLModel](https://img.shields.io/badge/SQLModel-latest-red.svg)
-![uv](https://img.shields.io/badge/managed%20by-uv-purple.svg)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![SQLModel](https://img.shields.io/badge/ORM-SQLModel-blue?logo=python&logoColor=white)](https://sqlmodel.tiangolo.com)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org)
 
-**PawHealth Pro** is an enterprise-grade backend microservice designed for comprehensive pet healthcare management. It features a **Smart Intelligence Engine** that aggregates clinical data, nutrition, and weight trends into a unified proactive care system.
-
----
+**PawHealth Pro** is an enterprise-grade backend solution for comprehensive pet healthcare. Developed as part of the **EASS-HIT 2026** course, this system provides a robust API for tracking dog profiles, weight metrics, and medical history.
 
 ## 🌟 Key Features
-
-* **🧠 Unified Activity Timeline:** A sophisticated chronological engine that merges medical, feeding, and weight data into a single intelligence feed.
-* **📸 Profile Media Management:** Secure image upload and static serving for pet profile pictures with file-type validation.
-* **🏥 Clinical Medical Records:** Detailed tracking of veterinary visits inclu* **🏥 Clinical Medicio* **🏥 Clinical Medical Records:** Detailed tracking ocy SOS* **🏥 Clinical Medical Records:** Detailed tracking of veat* **🏥 Clinical Medical Records:** Detailed tracking of veterinary visits inclu* **🏥 Clin u* **🏥 Clinical Medical Records:** Detailed tracking of veterion* **🏥 Clinical Medical Records:** Detailed tracking of vIntegrated middleware logging request duration for high-traffic environment monitoring.
-
----
+- **🐕 Profile Management**: Complete CRUD operations for pet registration and tracking.
+- **📊 Health Metrics**: Specialized logging for weight with automated Pydantic validation.
+- **🛡️ Data Integrity**: Powered by **SQLModel**, ensuring type safety between the API and the database.
+- **🌐 CORS Enabled**: Pre-configured for seamless integration with frontend frameworks.
+- **🧪 Automated Testing**: Full test suite using `pytest` with isolated in-memory database execution.
 
 ## 🏗 System Architecture
-
-The project follows a modular architecture inspired by scalable microservices, focusing on separation of concerns and data persistence.
-
-```text
-ppppppppppppppp
-├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├  �├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─�├─� seed.py          # Automated Database Seeding (Bonus)
+\`\`\`text
+paw-health-api/
+├── app/
+│   ├── main.py          # API Routes
+│   ├── models.py        # SQLModel Schemas
+│   ├── database.py      # Persistence Layer
 ├── tests/
-│   ├── test_main.py     # Comprehensive Pytest Suite
-│   └── __init__.py
-├── uploads/             # Persistent Profile Image Storage
-├── pyproject.toml       # Dependency & Environment Configuration
+│   ├── conftest.py      # Pytest Fixtures
+│   └── test_api.py      # Integration Tests
 └── README.md            # Technical Documentation
-🛠 Tech Stack
-Language: Python 3.12+ (Typed)
+\`\`\`
 
-Web Framework: FastAPI (Asynchronous logic)
+## 🛠 Tech Stack
+- **Framework**: FastAPI
+- **Database**: SQLModel (SQLite)
+- **Environment**: [uv](https://github.com/astral-sh/uv)
+- **Testing**: Pytest
 
-ORM: SQLModel (Modern SQLAlchemy + Pydantic wrapper)
+## 🚦 Getting Started
+1. **Initialize**: \`uv sync\`
+2. **Seed Data**: \`uv run python seed.py\`
+3. **Run Server**: \`uv run uvicorn app.main:app --reload\`
 
-Package Manager: uv (High-performance dependency resolution)
+## 🤖 AI Assistance
+This project was developed in collaboration with **Gemini (Google)**. AI assisted in modular architecture design, SQLModel validation rules, and Pytest configuration. All code was manually verified and tested locally.
 
-Testing: Pytest with FastAPI TestClient
-
-🚦 Getting Started
-Initialize Environment
-uv sync
-Populate Demo Data (Bonus)
-PYTHONPATH=. uv run python scripts/seed.py
-Launch the API
-uv run uvicorn app.main:app --reload
-Execute Test Suite
-uv run pytest
-Interactive Documentation: Once the server is running, access the full Swagger UI at: http://127.0.0.1:8000/docs
-
-📝 Design Philosophy
-Developed as part of the EASS-HIT course, this project demonstrates advanced concepts in RESTful API design, database normalization, and automated business logic.
-
-Created by Bar Aizenberg - Passionate about Dog Health & Software Engineering.
-
-🤖 AI Assistance
-This project was developed in collaboration with Gemini (Google). AI assisted in:
-
-Designing the relational database architecture and SQLModel relationship logic.
-
-Implementing the Unified Timeline aggregation and sorting algorithms.
-
-Configuring the Pytest suite for robust validation and error-code verification.
-
-All AI-generated components were manually reviewed, refactored, and verified through automated tests.
+---
+**Created by Bar Aizenberg**

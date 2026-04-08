@@ -1,5 +1,6 @@
 import time
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request
 from sqlmodel import Session, select
 from typing import List
@@ -10,15 +11,17 @@ from app.models import Dog, FeedingLog, WeightEntry, MedicalRecord
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("PawHealth")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
 app = FastAPI(
     title="PawHealth Pro",
     description="Advanced Veterinary Management API with proactive intelligence.",
-    version="3.0.0"
+    version="3.0.0",
+    lifespan=lifespan
 )
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

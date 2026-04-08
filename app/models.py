@@ -2,27 +2,32 @@ from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
 
-class DogBase(SQLModel):
+class Dog(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(min_length=1, index=True)
     breed: str = Field(min_length=2, index=True)
     is_favorite: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.now)
     chip_number: Optional[str] = None
     emergency_vet_name: Optional[str] = None
     emergency_vet_phone: Optional[str] = None
-
-class Dog(DogBase, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    created_at: datetime = Field(default_factory=datetime.now)
 
 class WeightEntry(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     weight_kg: float = Field(gt=0)
     date: datetime = Field(default_factory=datetime.now)
-    dog_id: Optional[int] = None
+
+class FeedingLog(SQLModel, table=True):
+    """Tracking food and snacks consumption."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    amount_grams: int = Field(gt=0)
+    food_type: str = Field(min_length=2) # e.g., "Kibble", "Chicken Treat"
+    timestamp: datetime = Field(default_factory=datetime.now)
 
 class MedicalRecord(SQLModel, table=True):
+    """Vaccines and medical treatments tracking."""
     id: Optional[int] = Field(default=None, primary_key=True)
     treatment_name: str = Field(min_length=2)
-    category: str
+    category: str # e.g., "Vaccine", "Deworming"
     administered_date: datetime = Field(default_factory=datetime.now)
     next_due_date: Optional[datetime] = None

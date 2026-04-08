@@ -22,5 +22,7 @@ def test_dog_registration():
     assert response.json()["name"] == "Joey"
 
 def test_invalid_weight_validation():
-    response = client.post("/weight", json={"weight_kg": -5.5})
+    # We send dog_id: 1 (from seed/previous test) to pass the existence check
+    # so we can actually test the negative weight validation logic
+    response = client.post("/weight", json={"weight_kg": -5.5, "dog_id": 1})
     assert response.status_code == 422

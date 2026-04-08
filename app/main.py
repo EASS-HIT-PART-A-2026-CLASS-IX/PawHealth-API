@@ -1,65 +1,69 @@
-import time
 import logging
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, HTTPException
 from sqlmodel import Session, select, func
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime, date
 from app.database import create_db_and_tables, get_session
-from app.models import Dog, FeedingLog, WeightEntry, MedicalTreatment
+from app.models import Dog, FeedingLog, WeightEntry, MedicalRecord
 
-# Logging setup
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("PawHealth")
-
-app = FastAPI(
-    title="PawHealth Pro API",
-    description="Advanced Engineering Project for Dog Health & Nutrition Monitoring",
-    version="2.5.0",
-    contact={"name": "Bar Aizenberg", "url": "https://github.com/baraiz"}
-)
+app = FastAPI(title="PawHealth Pro", version="3.0.0")
 
 @app.on_event("startup")
 def on_startup():
     create_db_and_tables()
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration = (time.time() - start_time) * 1000
-    logger.info(f"REQ: {request.method} {request.url.path} | DUR: {duration:.2f}ms | STATUS: {response.status_code}")
-    return response
-
-# --- Analytics & Insights ---
-@app.get("/analytics/summary", tags=["Analytics"])
-def get_health_summary(session: Session = Depends(get_session)):
-    """Provides high-level health insights and statistics."""
-    # Calculate Average Feeding
-    avg_feeding = session.exec(select(func.avg(FeedingLog.amount_grams))).one()
-    
-    # Check for recent weight
-    latest_weight = session.exec(select(WeightEntry).order_by(WeightEntry.date.desc())).first()
-    
-    # Overdue Vaccines
-    overdue = session.exec(select(MedicalTreatment).where(MedicalTreatment.next_due_date < datetime.now())).all()
-    
+# --- Emergency & Profile ---
+@app.get("/emergency", tags=["Emergency"])
+def get_emergency_info(session: Session = Depends(get_session)):
+    """Quick access to emergency vet contact details."""
+    dog = session.exec(select(Dog)).first()
+    if not dog or not dog.emergency_vet_name:
+        return {"msg": "No emergency contact set"}
     return {
-        "nutrition": {"average_daily_grams": round(avg_feeding, 2) if avg_feeding else 0},
-        "latest_metrics": {"weight_kg": latest_weight.weight_kg if latest_weight else None},
-        "alerts": {"overdue_treatments_count": len(overdue)}
+        "vet_name": dog.emergency_vet_name,
+        "phone": dog.emergency_vet_phone,
+        "action": "CALL NOW"
     }
 
-# --- Core API ---
-@app.post("/dog", tags=["Profile"], response_model=Dog)
-def create_dog(dog: Dog, session: Session = Depends(get_session)):
+# --- Smart Task Engine ---
+@app.get("/tasks/today", tags=["Intelligence"])
+def get_daily_tasks(session: Session = Depends(get_session)):
+    """Automatically generates a checklist for today's pet care."""
+    tasks = []
+    today = datetime.now().date()
+
+    # 1. Check Feeding (Did Joey eat enough today?)
+    today_start = datetime.combine(today, datetime.min.time())
+    feedings = session.exec(select(FeedingLog).where(FeedingLog.timestamp >= today_start)).all()
+    total_eaten = sum(f.amount_grams for f in feedings)
+    if total_eaten < 200: # Target 200g
+        tasks.append({"task": "Feeding", "status": "PENDING", "msg": f"Joey only ate {total_eaten}g out of 200g"})
+
+    # 2. Check Upcoming/Overdue Medical
+    upcoming = session.exec(select(MedicalRecord).where(MedicalRecord.next_due_date <= today)).all()
+    for item in upcoming:
+        tasks.append({
+            "task": f"Medical: {item.treatment_name}",
+            "status": "URGENT",
+            "msg": f"Scheduled for: {item.next_due_date.date()}"
+        })
+
+    return {"date": today, "tasks": tasks, "count": len(tasks)}
+
+# --- Standard Endpoints (Dog, Feeding, Medical) ---
+@app.post("/dog", tags=["Profile"])
+def update_dog_profile(dog: Dog, session: Session = Depends(get_session)):
     session.add(dog)
     session.commit()
     session.refresh(dog)
     return dog
 
-@app.get("/dog", tags=["Profile"], response_model=List[Dog])
-def get_dogs(session: Session = Depends(get_session)):
-    return session.exec(select(Dog)).all()
+@app.post("/medical", tags=["Medical"])
+def add_medical_record(record: MedicalRecord, session: Session = Depends(get_session)):
+    session.add(record)
+    session.commit()
+    session.refresh(record)
+    return record
 
 @app.post("/feeding", tags=["Nutrition"])
 def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
@@ -67,17 +71,3 @@ def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(log)
     return log
-
-@app.post("/weight", tags=["Health"])
-def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
-    session.add(entry)
-    session.commit()
-    session.refresh(entry)
-    return entry
-
-@app.post("/medical", tags=["Health"])
-def log_treatment(treatment: MedicalTreatment, session: Session = Depends(get_session)):
-    session.add(treatment)
-    session.commit()
-    session.refresh(treatment)
-    return treatment

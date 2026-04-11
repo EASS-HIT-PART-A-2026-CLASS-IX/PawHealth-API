@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
-from typing import List, Optional
+from typing import List
 from app.database import create_db_and_tables, get_session
 from app.models import Dog, WeightEntry, FeedingLog, MedicalRecord
 from contextlib import asynccontextmanager
@@ -42,6 +42,10 @@ def delete_dog(dog_id: int, session: Session = Depends(get_session)):
 # --- HEALTH LOGS (Weight) ---
 @app.post("/health/weight", tags=["Health"], response_model=WeightEntry, status_code=201)
 def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
+    # Bulletproof manual validation to ensure 422 on negative weights
+    if entry.weight_kg <= 0:
+        raise HTTPException(status_code=422, detail="Weight must be strictly positive")
+        
     session.add(entry); session.commit(); session.refresh(entry); return entry
 
 @app.get("/dogs/{dog_id}/weight", tags=["Health"], response_model=List[WeightEntry])

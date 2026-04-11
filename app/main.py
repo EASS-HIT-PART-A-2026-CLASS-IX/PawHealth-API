@@ -1,71 +1,58 @@
-import os
-import shutil
-import logging
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException, Query, File, UploadFile
-from fastapi.staticfiles import StaticFiles
-from sqlmodel import Session, select, or_
+from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session, select
 from typing import List, Optional
-from datetime import datetime, date
 from app.database import create_db_and_tables, get_session
-from app.models import Dog, WeightEntry, MedicalRecord, FeedingLog
-
-# Ensure uploads directory exists
-os.makedirs("uploads", exist_ok=True)
+from app.models import Dog, WeightEntry, FeedingLog, MedicalRecord
+from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
 
-app = FastAPI(title="PawHealth Ultimate", version="3.6.1", lifespan=lifespan)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app = FastAPI(title="PawHealth Pro", version="3.2.0", lifespan=lifespan)
 
-@app.get("/health", tags=["System"])
-async def health_check():
-    return {"status": "healthy", "version": "3.6.1"}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.post("/dog", tags=["Profile"], response_model=Dog)
-async def register_dog(dog: Dog, session: Session = Depends(get_session)):
+# --- DOGS ---
+@app.get("/dogs", tags=["Dogs"], response_model=List[Dog])
+def list_dogs(
+    offset: int = 0, 
+    limit: int = Query(default=10, le=100),
+    session: Session = Depends(get_session)
+):
+    return session.exec(select(Dog).offset(offset).limit(limit)).all()
+
+@app.post("/dogs", tags=["Dogs"], response_model=Dog, status_code=201)
+def create_dog(dog: Dog, session: Session = Depends(get_session)):
     session.add(dog); session.commit(); session.refresh(dog); return dog
 
-@app.get("/dog", tags=["Profile"], response_model=List[Dog])
-async def list_dogs(session: Session = Depends(get_session), search: Optional[str] = Query(None)):
-    statement = select(Dog)
-    if search:
-        statement = statement.where(or_(Dog.name.contains(search), Dog.breed.contains(search)))
-    return session.exec(statement).all()
+@app.delete("/dogs/{dog_id}", tags=["Dogs"])
+def delete_dog(dog_id: int, session: Session = Depends(get_session)):
+    dog = session.get(Dog, dog_id)
+    if not dog: raise HTTPException(status_code=404)
+    session.delete(dog); session.commit(); return {"ok": True}
 
-@app.post("/weight", tags=["Health"], response_model=WeightEntry)
-async def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
-    # 1. Validation check (for 422 error)
-    if entry.weight_kg <= 0:
-        raise HTTPException(status_code=422, detail="Weight must be positive")
-    
-    # 2. Existence check (for 404 error)
-    if not session.get(Dog, entry.dog_id):
-        raise HTTPException(status_code=404, detail="Dog not found")
-        
+# --- HEALTH LOGS (Weight) ---
+@app.post("/health/weight", tags=["Health"], response_model=WeightEntry, status_code=201)
+def log_weight(entry: WeightEntry, session: Session = Depends(get_session)):
     session.add(entry); session.commit(); session.refresh(entry); return entry
 
-@app.get("/timeline", tags=["Intelligence"])
-async def get_unified_timeline(session: Session = Depends(get_session)):
-    feedings = session.exec(select(FeedingLog)).all()
-    medical = session.exec(select(MedicalRecord)).all()
-    weights = session.exec(select(WeightEntry)).all()
-    timeline = []
-    for f in feedings: timeline.append({"type": "Feeding", "time": f.timestamp, "detail": f.food_type})
-    for m in medical: timeline.append({"type": "Medical", "time": m.administered_date, "detail": m.treatment_name})
-    for w in weights: timeline.append({"type": "Weight", "time": w.date, "detail": f"{w.weight_kg}kg"})
-    return sorted(timeline, key=lambda x: x['time'], reverse=True)
+@app.get("/dogs/{dog_id}/weight", tags=["Health"], response_model=List[WeightEntry])
+def get_dog_weights(dog_id: int, session: Session = Depends(get_session)):
+    return session.exec(select(WeightEntry).where(WeightEntry.dog_id == dog_id)).all()
 
-@app.post("/dog/{dog_id}/upload-photo", tags=["Profile"])
-async def upload_dog_photo(dog_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
-    dog = session.get(Dog, dog_id)
-    if not dog: raise HTTPException(status_code=404, detail="Dog not found")
-    file_path = f"uploads/dog_{dog_id}.jpg"
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    dog.profile_picture = file_path
-    session.add(dog); session.commit(); session.refresh(dog)
-    return {"status": "success", "path": file_path}
+# --- FEEDING ---
+@app.post("/health/feeding", tags=["Health"], response_model=FeedingLog, status_code=201)
+def log_feeding(log: FeedingLog, session: Session = Depends(get_session)):
+    session.add(log); session.commit(); session.refresh(log); return log
+
+@app.get("/health", tags=["System"])
+def health_check():
+    return {"status": "healthy", "version": "3.2.0"}

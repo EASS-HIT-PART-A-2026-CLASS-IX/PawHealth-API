@@ -1,6 +1,6 @@
 # 🐾 PawHealth Pro - Smart Veterinary Management System
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)]([https://fastapi.tiangolo.com](https://fastapi.tiangolo.com))
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![SQLModel](https://img.shields.io/badge/ORM-SQLModel-blue?logo=python&logoColor=white)](https://sqlmodel.tiangolo.com)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org)
 
@@ -20,6 +20,7 @@
 | :--- | :--- | :--- |
 | **GET** | `/dogs` | List all dogs (with pagination) |
 | **POST** | `/dogs` | Register a new dog |
+| **PATCH** | `/dogs/{dog_id}` | Partially update a dog profile (e.g., set as favorite) |
 | **DELETE** | `/dogs/{dog_id}` | Remove a dog profile |
 | **POST** | `/health/weight` | Log weight for a specific dog_id |
 | **GET** | `/dogs/{dog_id}/weight` | Get weight history for a dog |
@@ -32,9 +33,14 @@ The project follows a clean, modular microservice-ready structure:
 
     paw-health-api/
     ├── app/
-    │   ├── main.py          # Intelligence Engine & API Routes
-    │   ├── models.py        # SQLModel Schemas & Validation Rules
+    │   ├── routers/         # API Routes
+    │   │   ├── dogs.py      # Profile Management
+    │   │   ├── health.py    # Metrics Logging
+    │   │   └── system.py    # Health Check
+    │   ├── main.py          # Intelligence Engine
+    │   ├── models.py        # SQLModel Schemas & DTOs
     │   ├── database.py      # Persistence Layer (SQLite & Session Engine)
+    │   └── config.py        # Environment Variables Mapping
     ├── tests/
     │   ├── conftest.py      # Pytest Fixtures & StaticPool Setup
     │   └── test_api.py      # Integration and Validation Tests
@@ -47,6 +53,7 @@ The project follows a clean, modular microservice-ready structure:
 - **Framework**: FastAPI (Asynchronous logic)
 - **Database**: SQLModel (Modern SQLAlchemy + Pydantic wrapper)
 - **Environment Management**: [uv](https://github.com/astral-sh/uv)
+- **Configuration**: Pydantic Settings
 - **Testing**: Pytest with `httpx`
 
 ## 🚦 Getting Started

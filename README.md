@@ -9,9 +9,13 @@
 ## 🌟 Key Features
 
 - **🐕 Profile Management**: Complete CRUD operations for pet registration and tracking.
+
 - **📊 Health Metrics**: Specialized logging for weight with automated Pydantic validation.
+
 - **🛡️ Data Integrity**: Powered by **SQLModel**, ensuring type safety between the API and the database.
+
 - **🌐 CORS Enabled**: Pre-configured for seamless integration with frontend frameworks.
+
 - **🧪 Automated Testing**: Full test suite using `pytest` with isolated in-memory database execution.
 
 ## 🏗 System Architecture
@@ -47,6 +51,7 @@ paw-health-api/
 ## 🤖 AI Assistance
 
 This project was developed in collaboration with **Gemini (Google)**. AI tools were utilized for:
+
 - Designing the modular project directory structure.
 - Implementing SQLModel relationship logic and Field validations.
 - Solving StaticPool connection issues in the Pytest suite.

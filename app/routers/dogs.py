@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from typing import List
 from app.database import get_session
-from app.models import Dog, DogRead, DogCreate, WeightEntry, WeightEntryRead
+from app.models import Dog, DogRead, DogCreate, DogUpdate, WeightEntry, WeightEntryRead
 
 router = APIRouter(prefix="/dogs", tags=["Dogs"])
 
@@ -18,10 +18,27 @@ def create_dog(dog: DogCreate, session: Session = Depends(get_session)):
     session.refresh(db_dog)
     return db_dog
 
+# NEW: Partial Update (PATCH) endpoint
+@router.patch("/{dog_id}", response_model=DogRead)
+def update_dog(dog_id: int, dog_update: DogUpdate, session: Session = Depends(get_session)):
+    db_dog = session.get(Dog, dog_id)
+    if not db_dog:
+        raise HTTPException(status_code=404, detail="Dog not found")
+    
+    # Update only the fields that were provided by the user
+    update_data = dog_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_dog, key, value)
+        
+    session.add(db_dog)
+    session.commit()
+    session.refresh(db_dog)
+    return db_dog
+
 @router.delete("/{dog_id}")
 def delete_dog(dog_id: int, session: Session = Depends(get_session)):
     dog = session.get(Dog, dog_id)
-    if not dog: raise HTTPException(status_code=404)
+    if not dog: raise HTTPException(status_code=404, detail="Dog not found")
     session.delete(dog)
     session.commit()
     return {"ok": True}

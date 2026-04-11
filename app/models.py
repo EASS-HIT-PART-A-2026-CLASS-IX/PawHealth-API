@@ -37,6 +37,12 @@ class DogRead(DogBase):
     id: int
     created_at: datetime
 
+# NEW: Schema for partial updates
+class DogUpdate(SQLModel):
+    name: Optional[str] = Field(default=None, min_length=1)
+    breed: Optional[str] = Field(default=None, min_length=2)
+    is_favorite: Optional[bool] = None
+
 class WeightEntryCreate(WeightEntryBase): pass
 class WeightEntryRead(WeightEntryBase):
     id: int

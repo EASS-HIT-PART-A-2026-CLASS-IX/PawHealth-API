@@ -6,7 +6,6 @@ engine = create_engine("sqlite:///pawhealth.db")
 
 def seed_data():
     with Session(engine) as session:
-        # Check if already seeded
         if session.query(Dog).first(): return
 
         joey = Dog(name="Joey", breed="Poodle", is_favorite=True)
@@ -14,7 +13,6 @@ def seed_data():
         session.commit()
         session.refresh(joey)
 
-        # Add related data using Joey's ID
         weight = WeightEntry(weight_kg=5.5, dog_id=joey.id)
         session.add(weight)
         session.commit()

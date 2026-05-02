@@ -31,22 +31,24 @@
 
 The project follows a clean, modular microservice-ready structure:
 
-    paw-health-api/
-    ├── app/
-    │   ├── routers/         # API Routes
-    │   │   ├── dogs.py      # Profile Management
-    │   │   ├── health.py    # Metrics Logging
-    │   │   └── system.py    # Health Check
-    │   ├── main.py          # Intelligence Engine
-    │   ├── models.py        # SQLModel Schemas & DTOs
-    │   ├── database.py      # Persistence Layer (SQLite & Session Engine)
-    │   └── config.py        # Environment Variables Mapping
-    ├── tests/
-    │   ├── conftest.py      # Pytest Fixtures & StaticPool Setup
-    │   └── test_api.py      # Integration and Validation Tests
-    ├── pawhealth.db         # Local SQLite Database (Auto-generated)
-    ├── pyproject.toml       # Environment & Dependency Configuration
-    └── README.md            # Technical Documentation
+~~~text
+paw-health-api/
+├── app/
+│   ├── routers/         # API Routes
+│   │   ├── dogs.py      # Profile Management
+│   │   ├── health.py    # Metrics Logging
+│   │   └── system.py    # Health Check
+│   ├── main.py          # Intelligence Engine
+│   ├── models.py        # SQLModel Schemas & DTOs
+│   ├── database.py      # Persistence Layer (SQLite & Session Engine)
+│   └── config.py        # Environment Variables Mapping
+├── tests/
+│   ├── conftest.py      # Pytest Fixtures & StaticPool Setup
+│   └── test_api.py      # Integration and Validation Tests
+├── pawhealth.db         # Local SQLite Database (Auto-generated)
+├── pyproject.toml       # Environment & Dependency Configuration
+└── README.md            # Technical Documentation
+~~~
 
 ## 🛠 Tech Stack
 
@@ -58,24 +60,27 @@ The project follows a clean, modular microservice-ready structure:
 
 ## 🚦 Getting Started
 
-### 1. Initialize Environment
-Ensure you have `uv` installed, then run:
+### Option 1: Docker (Recommended)
+Launch the entire ecosystem (API, Sidecar, and UI) with a single command:
+~~~bash
+docker compose up -d --build
+~~~
+*   **Management Dashboard:** [http://localhost:8501](http://localhost:8501)
+*   **Interactive API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+*   **System Health Monitor:** [http://localhost:8000/healthz](http://localhost:8000/healthz)
 
-    uv sync
-
-### 2. Launch the Server
-
-    uv run uvicorn app.main:app --reload
-
-The API will be available at `http://127.0.0.1:8000`.
-
-### 3. Interactive Documentation
-Access the auto-generated Swagger UI to test the endpoints:
-👉 [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+### Option 2: Local Development
+If you prefer running without Docker:
+~~~bash
+uv sync
+uv run uvicorn app.main:app --reload
+~~~
 
 ## 🧪 Running Tests
 
-    uv run pytest
+~~~bash
+uv run pytest
+~~~
 
 ## 🤖 AI Assistance
 

@@ -1,35 +1,32 @@
 services:
   api:
     build: .
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     environment:
-      - PAW_DATABASE_URL=sqlite:///./data/pawhealth.db
-      - PAW_REDIS_URL=redis://redis:6379/0
-    depends_on:
-      redis:
-        condition: service_healthy
+      - DATABASE_URL=sqlite:///./paw_health.db
+      - JWT_SECRET=supersecret
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - .:/app
 
   sidecar:
-    build: .
-    command: uv run uvicorn sidecar.main:app --host 0.0.0.0 --port 8001
+    build:
+      context: .
+      dockerfile: sidecar/Dockerfile
     ports:
       - "8001:8001"
 
-  redis:
-    image: redis:7-alpine
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  streamlit:
-    build: .
-    command: uv run streamlit run frontend/dashboard.py
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
       - "8501:8501"
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy

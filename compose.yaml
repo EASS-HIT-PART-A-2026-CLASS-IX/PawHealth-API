@@ -5,28 +5,23 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:///./paw_health.db
-      - JWT_SECRET=supersecret
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
-    volumes:
-      - .:/app
 
   sidecar:
-    build:
-      context: .
-      dockerfile: sidecar/Dockerfile
+    build: ./sidecar
     ports:
       - "8001:8001"
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+    build: ./frontend
     ports:
       - "8501:8501"
+    environment:
+      - BACKEND_URL=http://api:8000
     depends_on:
       api:
         condition: service_healthy

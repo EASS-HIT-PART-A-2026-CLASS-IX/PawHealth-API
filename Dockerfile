@@ -1,20 +1,8 @@
-# Use python slim image for a smaller footprint
+FROM ghcr.io/astral-sh/uv:latest AS uv
 FROM python:3.12-slim
-
-# Install uv for fast dependency management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
-
-# Set working directory
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-
-# Copy project files
+COPY --from=uv /uv /bin/uv
 COPY . .
-
-# Sync dependencies using uv
 RUN uv sync --frozen
-
-# Export port 8000 for FastAPI
-EXPOSE 8000
-
-# Run the application with uvicorn
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn app.main:app", "--host", "0.0.0.0", "--port", "8000"]

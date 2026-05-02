@@ -1,16 +1,16 @@
-# EX3 Runbook - PawHealth Management
+# Deployment Runbook (EX3)
 
-## How to Start the Project
-To launch all services (API, Redis, Sidecar, and UI) in a single command, run:
-\`\`\`bash
-docker compose up --build
-\`\`\`
+## Local Launch
+1. Ensure Docker Desktop is running.
+2. Run `docker compose up -d --build`.
+3. Verify services are up: `docker compose ps`.
 
-## Service Ports
-- **FastAPI Backend:** http://localhost:8000
-- **AI Sidecar:** http://localhost:8001
-- **Streamlit UI:** http://localhost:8501
+## Health Verification
+Run the following to verify the API and Trace ID propagation:
+`curl -i http://localhost:8000/healthz`
 
-## Verification
-1. **Health Check:** curl http://localhost:8000/healthz
-2. **Async Jobs:** Run 'uv run python scripts/refresh.py'
+## Telemetry
+The system uses the `x-trace-id` header to track requests across the FastAPI backend and the Streamlit frontend.
+
+## Security
+Endpoints under `/dogs/{id}/refresh` require a Bearer token. Unauthorized requests will return a `401`.

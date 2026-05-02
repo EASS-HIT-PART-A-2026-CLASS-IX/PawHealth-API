@@ -1,18 +1,32 @@
-from fastapi import FastAPI
+import uuid
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from app.database import create_db_and_tables
-from app.routers import dogs, health, system
+from app.database import init_db
+from app.routers import dogs
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    create_db_and_tables()
-    yield
+app = FastAPI(title="PawHealth API", version="0.2.0")
 
-app = FastAPI(title="PawHealth Pro", version="3.3.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+@app.middleware("http")
+async def add_trace_id(request: Request, call_next):
+    trace_id = request.headers.get("X-Trace-Id") or f"paw-{uuid.uuid4().hex[:8]}"
+    response = await call_next(request)
+    response.headers["X-Trace-Id"] = trace_id
+    return response
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
 app.include_router(dogs.router)
-app.include_router(health.router)
-app.include_router(system.router)
+
+@app.get("/healthz", tags=["health"])
+def healthcheck():
+    return {"status": "ok", "database": "active"}

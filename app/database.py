@@ -1,9 +1,16 @@
-from sqlmodel import SQLModel, create_engine, Session
-from app.config import settings
+from sqlmodel import create_engine, SQLModel, Session
+from .config import settings
 
-engine = create_engine(settings.database_url, connect_args={"check_same_thread": False})
+def _build_engine():
+    if settings.db_mode == "memory":
+        return create_engine("sqlite://")
+    connect_args = {"check_same_thread": False} if settings.db_mode == "sqlite" else {}
+    return create_engine(settings.database_url, echo=settings.database_echo, connect_args=connect_args)
 
-def create_db_and_tables():
+engine = _build_engine()
+
+def init_db():
+    from . import models 
     SQLModel.metadata.create_all(engine)
 
 def get_session():

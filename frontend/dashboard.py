@@ -5,19 +5,23 @@ from client import get_dogs, add_dog
 st.set_page_config(page_title="PawHealth Dashboard", page_icon="🐾")
 st.title("🐾 PawHealth Management")
 
-dogs_list = get_dogs()
-st.sidebar.metric("Total Dogs", len(dogs_list))
+# EX2 Requirement: Provide one small extra (summary metric)
+dogs = get_dogs()
+st.sidebar.metric("Total Dogs Registered", len(dogs))
 
+# EX2 Requirement: Allow users to list existing entries
 st.subheader("Dog Registry")
-if dogs_list:
-    df = pd.DataFrame(dogs_list)
-    st.dataframe(df, use_container_width=True)
+if dogs:
+    # Updated to width='stretch' to match latest Streamlit API
+    st.dataframe(pd.DataFrame(dogs), width='stretch')
 else:
     st.info("The registry is currently empty.")
 
 st.divider()
+
+# EX2 Requirement: Allow users to add a new entry
 st.subheader("Register a New Dog")
-with st.form("new_dog"):
+with st.form("add_dog_form"):
     name = st.text_input("Name")
     breed = st.text_input("Breed")
     age = st.number_input("Age", 0, 30, 1)
@@ -25,7 +29,7 @@ with st.form("new_dog"):
         if name and breed:
             try:
                 add_dog(name, breed, age)
-                st.success(f"{name} added!")
+                st.success(f"Added {name} successfully!")
                 st.rerun()
-            except Exception as e:
-                st.error("Connection error: Make sure Backend is running on port 8000")
+            except Exception:
+                st.error("Connection error: Is the Backend running?")

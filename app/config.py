@@ -1,20 +1,12 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    app_name: str = "PawHealth PRO"
-    # Database & Redis (Session 10)
-    database_url: str = "sqlite:///./data/pawhealth.db"
-    redis_url: str = "redis://redis:6379/0"
-    
-    # Security (EX3 Baseline - Session 11)
-    jwt_secret: str = "super-secret-key-change-in-prod"
-    jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 30
-    
-    # AI Sidecar (Session 08)
-    ai_sidecar_url: str = "http://sidecar:8001"
-    google_api_key: str = "your-google-api-key"
+    app_name: str = "PawHealth API"
+    db_mode: str = "sqlite"
+    database_url: str = "sqlite:///./paw_health.db"
+    jwt_secret: str = "supersecret"
 
-    model_config = SettingsConfigDict(env_prefix="PAW_", env_file=".env", extra="ignore")
+    class Config:
+        env_file = ".env"
 
 settings = Settings()

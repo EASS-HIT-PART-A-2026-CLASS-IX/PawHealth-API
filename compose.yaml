@@ -15,6 +15,11 @@ services:
     build: ./sidecar
     ports:
       - "8001:8001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build: ./frontend
@@ -25,3 +30,4 @@ services:
     depends_on:
       api:
         condition: service_healthy
+

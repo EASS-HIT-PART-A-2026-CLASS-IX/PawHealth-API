@@ -1,61 +1,99 @@
 import uuid
-from typing import List, Optional
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Response, Header, HTTPException, status
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
+
 from .database import engine, create_db_and_tables
-from .models import Dog, WeightEntry
-from .security import get_current_user
+from .models import Dog, WeightEntry, WeightAnalysis
+from .routers import dogs, health, system
 
 processed_keys = set()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Initialize database on startup."""
     create_db_and_tables()
     yield
 
-app = FastAPI(title="PawHealth API", version="EX3-Final", lifespan=lifespan)
-create_db_and_tables()
+app = FastAPI(
+    title="PawHealth API",
+    version="EX3-Final",
+    description="Smart veterinary management system for dog health",
+    lifespan=lifespan
+)
+
+# Add CORS middleware for frontend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ============= MIDDLEWARE =============
 
 @app.middleware("http")
 async def add_telemetry_headers(request, call_next):
+    """Add trace ID to all responses for telemetry tracking."""
     trace_id = str(uuid.uuid4())
     response = await call_next(request)
     response.headers["x-trace-id"] = trace_id
+    response.headers["x-request-id"] = trace_id
     return response
+
+# ============= INCLUDE ROUTERS =============
+
+app.include_router(dogs.router, prefix="/dogs", tags=["Dogs"])
+app.include_router(health.router, prefix="/health", tags=["Health"])
+app.include_router(system.router, tags=["System"])
+
+# ============= HEALTH CHECK ENDPOINTS =============
 
 @app.get("/health")
 @app.get("/healthz")
 async def health_check():
+    """System health check endpoint."""
     return {"status": "healthy", "version": "EX3-Final"}
 
-@app.post("/health/weight")
-async def log_weight(entry: WeightEntry):
-    return {"status": "recorded", "data": entry}
+# ============= WEIGHT ANALYSIS ENDPOINT =============
 
-@app.post("/dogs", response_model=Dog, status_code=status.HTTP_201_CREATED)
-@app.post("/dogs/", response_model=Dog, status_code=status.HTTP_201_CREATED, include_in_schema=False)
-async def register_dog(dog: Dog):
+@app.get("/analysis/{dog_id}")
+async def get_weight_analysis(dog_id: int):
+    """Get weight analysis and recommendations for a dog.
+    
+    This endpoint demonstrates the domain logic for weight management:
+    - Calculates variance from ideal weight
+    - Provides personalized recommendations
+    - Special handling for edge cases (e.g., 11kg dog with 10kg target)
+    """
     with Session(engine) as session:
-        session.add(dog)
-        session.commit()
-        session.refresh(dog)
-        return dog
+        dog = session.get(Dog, dog_id)
+        if not dog:
+            return {"error": "Dog not found", "dog_id": dog_id}
+        
+        # Get latest weight
+        latest_weight = session.exec(
+            select(WeightEntry)
+            .where(WeightEntry.dog_id == dog_id)
+            .order_by(WeightEntry.date.desc())
+        ).first()
+        
+        if not latest_weight:
+            return {"error": "No weight data found", "dog_id": dog_id}
+        
+        # Generate analysis
+        analysis = WeightAnalysis.from_dog_and_weight(dog, latest_weight.weight_kg)
+        return analysis.model_dump()
 
-@app.get("/dogs", response_model=List[Dog])
-@app.get("/dogs/", response_model=List[Dog], include_in_schema=False)
-async def list_dogs():
-    with Session(engine) as session:
-        return session.exec(select(Dog)).all()
-
-@app.post("/dogs/{dog_id}/refresh")
-async def refresh_dog(dog_id: int, user: dict = Depends(get_current_user), x_idempotency_key: str = Header(None)):
-    if x_idempotency_key and x_idempotency_key in processed_keys:
-        return {"status": "already_processed", "dog_id": dog_id}
-    if x_idempotency_key:
-        processed_keys.add(x_idempotency_key)
-    return {"status": "success", "dog_id": dog_id, "updated_by": user.get("username", "user")}
+# ============= AI FOOD ANALYSIS ENDPOINT =============
 
 @app.post("/dogs/analyze-food")
 async def analyze_food(dog_breed: str, food: str):
+    """Analyze if a food is safe for a dog breed.
+    
+    In production, this would call the sidecar AI service.
+    """
     return {"is_safe": True, "advice": f"For a {dog_breed}, {food} is safe."}
+

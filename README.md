@@ -9,23 +9,23 @@
 ## 🌟 Key Features
 
 - **🐕 Profile Management**: Complete CRUD operations for pet registration and tracking.
-- **📊 Health Metrics**: Specialized logging for weight with automated Pydantic validation.
-- **🛡️ Data Integrity**: Powered by **SQLModel**, ensuring type safety between the API and the database.
+- **📊 Smart Health Metrics**: Specialized weight analysis handling cases like Joey (11kg dog, 10kg target) with personalized caloric recommendations.
+- **🛡️ Advanced Security**: Full JWT (JSON Web Token) implementation with cryptographic signing and Bearer token validation.
 - **🌐 CORS Enabled**: Pre-configured for seamless integration with frontend frameworks.
-- **🧪 Automated Testing**: Full test suite using `pytest` with isolated in-memory database execution.
+- **🧪 Automated Testing**: Full suite of 32 tests using pytest with isolated in-memory database execution.
 
 ## 🚀 API Reference
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | **GET** | `/dogs` | List all dogs (with pagination) |
-| **POST** | `/dogs` | Register a new dog |
-| **PATCH** | `/dogs/{dog_id}` | Partially update a dog profile (e.g., set as favorite) |
+| **POST** | `/dogs` | Register a new dog (JWT Protected) |
+| **PATCH** | `/dogs/{dog_id}` | Partially update a dog profile |
 | **DELETE** | `/dogs/{dog_id}` | Remove a dog profile |
 | **POST** | `/health/weight` | Log weight for a specific dog_id |
-| **GET** | `/dogs/{dog_id}/weight` | Get weight history for a dog |
+| **GET** | `/dogs/{dog_id}/weight` | Get weight history & variance analysis |
 | **POST** | `/health/feeding` | Log feeding session |
-| **GET** | `/health` | System health check |
+| **GET** | `/healthz` | System and Sidecar health check |
 
 ## 🏗 System Architecture
 
@@ -33,19 +33,16 @@ The project follows a clean, modular microservice-ready structure:
 
 ~~~text
 paw-health-api/
-├── app/
-│   ├── routers/         # API Routes
-│   │   ├── dogs.py      # Profile Management
-│   │   ├── health.py    # Metrics Logging
-│   │   └── system.py    # Health Check
+├── app/                 # Backend API (FastAPI + SQLModel)
+│   ├── routers/         # Integrated API Routes (Dogs, Health, System)
 │   ├── main.py          # Intelligence Engine
-│   ├── models.py        # SQLModel Schemas & DTOs
+│   ├── models.py        # SQLModel Schemas, DTOs & Weight Logic
 │   ├── database.py      # Persistence Layer (SQLite & Session Engine)
-│   └── config.py        # Environment Variables Mapping
-├── tests/
-│   ├── conftest.py      # Pytest Fixtures & StaticPool Setup
-│   └── test_api.py      # Integration and Validation Tests
-├── pawhealth.db         # Local SQLite Database (Auto-generated)
+│   └── security.py      # JWT Signing & Validation
+├── frontend/            # Streamlit Interface (EX2 Requirement)
+├── sidecar/             # AI Sidecar Microservice (EX3 Requirement)
+├── tests/               # 32+ Integration & Unit Tests
+├── compose.yaml         # Docker Orchestration (API, UI, Sidecar)
 ├── pyproject.toml       # Environment & Dependency Configuration
 └── README.md            # Technical Documentation
 ~~~
@@ -55,8 +52,8 @@ paw-health-api/
 - **Framework**: FastAPI (Asynchronous logic)
 - **Database**: SQLModel (Modern SQLAlchemy + Pydantic wrapper)
 - **Environment Management**: [uv](https://github.com/astral-sh/uv)
-- **Configuration**: Pydantic Settings
-- **Testing**: Pytest with `httpx`
+- **Security**: PyJWT with HMAC-SHA256
+- **Testing**: Pytest with httpx
 
 ## 🚦 Getting Started
 
@@ -65,31 +62,24 @@ Launch the entire ecosystem (API, Sidecar, and UI) with a single command:
 ~~~bash
 docker compose up -d --build
 ~~~
-*   **Management Dashboard:** [http://localhost:8501](http://localhost:8501)
-*   **Interactive API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
-*   **System Health Monitor:** [http://localhost:8000/healthz](http://localhost:8000/healthz)
+*   **Management Dashboard:** http://localhost:8501
+*   **Interactive API Docs:** http://localhost:8000/docs
+*   **System Health Monitor:** http://localhost:8000/healthz
 
 ### Option 2: Local Development
-If you prefer running without Docker:
 ~~~bash
 uv sync
 uv run uvicorn app.main:app --reload
 ~~~
 
 ## 🧪 Running Tests
-
 ~~~bash
-uv run pytest
+uv run pytest tests/ -v
 ~~~
 
 ## 🤖 AI Assistance
 
-This project was developed in collaboration with **Gemini (Google)**. AI tools were utilized for:
-
-- Designing the modular project directory structure.
-- Implementing complex SQLModel relationship logic and validations.
-- Solving connection issues in the Pytest suite.
-- Generating technical documentation and formatting.
+This project was developed in collaboration with **Gemini (Google)**. AI tools were utilized for designing the modular structure, implementing SQLModel logic, and generating the 32-test suite.
 
 *All AI-generated code was manually reviewed, modified to fit HIT course requirements, and verified through local integration tests.*
 

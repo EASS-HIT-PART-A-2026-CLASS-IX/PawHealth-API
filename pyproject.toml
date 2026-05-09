@@ -1,19 +1,18 @@
 [project]
 name = "paw-health-api"
 version = "0.1.0"
-description = "EX3 Full-Stack Microservices Project"
+description = "Professional Veterinary Management System"
+requires-python = ">=3.12"
 dependencies = [
-    "fastapi[all]",
-    "sqlmodel",
-    "pydantic-settings",
-    "passlib[bcrypt]",
-    "pyjwt",
-    "pydantic-ai",
-    "httpx",
-    "anyio",
-    "tenacity",
-    "redis",
-    "arq",
-    "streamlit",
-    "pandas"
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "sqlmodel>=0.0.16",
+    "pyjwt>=2.8.0",
+    "pydantic-settings>=2.2.0",
+    "httpx>=0.27.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
 ]

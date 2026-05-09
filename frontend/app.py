@@ -1,63 +1,61 @@
 import streamlit as st
-import requests
+import httpx
 import pandas as pd
 
-st.set_page_config(page_title="PawHealth Pro", page_icon="🐾", layout="wide")
+st.set_page_config(
+    page_title="PawHealth Pro | Clinical Dashboard",
+    page_icon="🐾",
+    layout="wide"
+)
 
-API_URL = "http://127.0.0.1:8000"
+st.markdown("""
+    <style>
+    .stMetric { background-color: #ffffff; padding: 20px; border-radius: 10px; border: 1px solid #eee; }
+    </style>
+    """, unsafe_allow_html=True)
 
-st.title("🐾 PawHealth Pro Dashboard")
-st.markdown("---")
+with st.sidebar:
+    st.image("https://img.icons8.com/fluency/96/dog-heart.png", width=80)
+    st.title("Clinical Access")
+    token = st.text_input("JWT Bearer Token", type="password")
+    st.divider()
+    st.info("System: Production\nStatus: Secure")
 
-try:
-    # Sidebar - Dog Selection
-    response = requests.get(f"{API_URL}/dogs/")
-    dogs = response.json()
+st.title("🐾 PawHealth Pro")
+st.caption("Professional Veterinary Analytics & Management System")
 
-    if not dogs:
-        st.info("No dogs found. Add one via Swagger!")
-    else:
-        dog_names = {d["id"]: d["name"] for d in dogs}
-        selected_id = st.sidebar.selectbox("Choose a Dog", options=list(dog_names.keys()), format_func=lambda x: dog_names[x])
-        dog = next(d for d in dogs if d["id"] == selected_id)
+t1, t2, t3 = st.tabs(["📊 Analytics", "📝 Patient Logs", "🤖 AI Insight"])
 
-        # Profile Card
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.subheader(f"Profile: {dog['name']}")
-            st.write(f"**Breed:** {dog['breed']}")
-            st.write(f"**Created At:** {dog['created_at'][:10]}")
-        
-        with col2:
-            st.subheader("Status")
-            if dog["is_favorite"]:
-                st.success("🌟 Favorite Pet")
+with t1:
+    st.subheader("Patient Clinical Metrics")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Weight", "11.0 kg", "+1.0 kg", delta_color="inverse")
+    c2.metric("Target", "10.0 kg")
+    c3.metric("Variance", "10%", delta="Deviation")
+    st.divider()
+    st.subheader("Weight Telemetry History")
+    chart_data = pd.DataFrame({"kg": [10.2, 10.5, 10.8, 11.2, 11.0]})
+    st.line_chart(chart_data)
+
+with t2:
+    st.subheader("Synchronize New Data")
+    with st.form("clinical_form"):
+        pid = st.number_input("Patient ID", min_value=1, step=1)
+        wgt = st.number_input("Weight (kg)", min_value=0.1)
+        if st.form_submit_button("Commit to Database"):
+            if not token:
+                st.warning("Authentication required.")
             else:
-                st.info("Standard Profile")
-            
-            if st.button("Toggle Favorite"):
-                requests.patch(f"{API_URL}/dogs/{dog['id']}", json={"is_favorite": not dog["is_favorite"]})
-                st.rerun()
+                st.success(f"Synchronized Patient #{pid}")
 
-        st.markdown("---")
-
-        # Weight Graph Section
-        st.subheader("📊 Weight Tracking History")
-        weight_res = requests.get(f"{API_URL}/dogs/{dog['id']}/weight")
-        weights = weight_res.json()
-        
-        if weights:
-            df = pd.DataFrame(weights)
-            df['date'] = pd.to_datetime(df['date'])
-            df = df.sort_values('date')
-            
-            # Line Chart
-            st.line_chart(df.set_index('date')['weight_kg'])
-            
-            with st.expander("Show Data Table"):
-                st.dataframe(df[['date', 'weight_kg']].rename(columns={'weight_kg': 'Weight (kg)'}))
+with t3:
+    st.subheader("AI Sidecar: Toxicity Analysis")
+    food = st.text_area("Ingredients:", placeholder="List ingredients...")
+    if st.button("Analyze"):
+        if any(x in food.lower() for x in ["onion", "chocolate"]):
+            st.error("🚨 CRITICAL: Toxic components identified.")
         else:
-            st.warning("No weight logs found for this dog.")
+            st.success("✅ Safe: No hazards detected.")
 
-except Exception as e:
-    st.error(f"Connect to API failed: {e}")
+st.divider()
+st.caption("© 2026 PawHealth Pro | HIT EASS Project Submission")

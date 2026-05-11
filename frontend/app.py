@@ -91,31 +91,37 @@ with t1:
         else:
             st.info("No patients found.")
 
-# Tab 2: Add Patient
+# --- Tab 2: Add Patient ---
 with t2:
-    st.subheader("Register New Dog")
-    with st.form("new_dog"):
-        c1, c2 = st.columns(2)
-        with c1:
-            name = st.text_input("Dog Name")
-            breed = st.text_input("Breed")
-        with c2:
-            ideal_w = st.number_input("Ideal Weight (kg)", min_value=0.1, value=11.0)
-            age = st.number_input("Age", min_value=0, value=3)
+    st.subheader("Register New Patient")
+    with st.form("add_dog_form"):
+        col_a, col_b = st.columns(2)
+        with col_a:
+            name = st.text_input("Dog Name", placeholder="e.g. Joey")
+            breed = st.text_input("Breed", placeholder="e.g. Poodle Mix")
+        with col_b:
+            # Using value=None and placeholder to avoid default numbers like 11 or 3
+            ideal_w = st.number_input("Ideal Weight (kg)", min_value=0.0, value=None, placeholder="Target weight...")
+            age = st.number_input("Age (years)", min_value=0, value=None, placeholder="Current age...")
         
         is_fav = st.checkbox("⭐ Mark as Favorite")
         
         if st.form_submit_button("Register Patient"):
-            payload = {
-                "name": name, "breed": breed, 
-                "ideal_weight_kg": ideal_w, "age": age,
-                "is_favorite": is_fav
-            }
-            res = make_request("POST", "/dogs/", json=payload)
-            if res and res.status_code in [200, 201]:
-                st.success(f"{name} added successfully!")
-                time.sleep(1)
-                st.rerun()
+            if name and breed and ideal_w is not None:
+                payload = {
+                    "name": name, 
+                    "breed": breed, 
+                    "ideal_weight_kg": ideal_w, 
+                    "age": age if age is not None else 0,
+                    "is_favorite": is_fav
+                }
+                r = make_request("POST", "/dogs/", json=payload)
+                if r and r.status_code in [200, 201]:
+                    st.success(f"Patient {name} registered successfully!")
+                    time.sleep(1)
+                    st.rerun()
+            else:
+                st.warning("Please fill in Name, Breed, and Ideal Weight.")
 
 # Tab 3: Weight Telemetry (Reactive Graph)
 with t3:

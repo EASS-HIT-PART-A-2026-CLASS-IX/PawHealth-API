@@ -1,207 +1,174 @@
 import streamlit as st
 import httpx
 import pandas as pd
+import time
+from datetime import datetime
 
-# Page configuration for PawHealth Pro
+# Page configuration
 st.set_page_config(page_title="PawHealth Pro", page_icon="🐾", layout="wide")
 URL = "http://api:8000"
 
-# Initialize session state for token management
+# Initialize session state
 if "token" not in st.session_state:
     st.session_state.token = None
 if "username" not in st.session_state:
     st.session_state.username = None
-if "show_register" not in st.session_state:
-    st.session_state.show_register = False
 
-# Sidebar for authentication and system status
-with st.sidebar:
-    st.title("PawHealth Pro")
-    
-    if st.session_state.token is None:
-        # Show login/register forms
-        st.subheader("🔐 Authentication")
-        
-        # Toggle between login and register
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Login", use_container_width=True):
-                st.session_state.show_register = False
-                st.rerun()
-        with col2:
-            if st.button("Register", use_container_width=True):
-                st.session_state.show_register = True
-                st.rerun()
-        
-        st.divider()
-        
-        if st.session_state.show_register:
-            # Registration form
-            st.write("**Create Account**")
-            with st.form("register_form"):
-                username = st.text_input("Username", key="reg_username")
-                password = st.text_input("Password", type="password", key="reg_password")
-                password_confirm = st.text_input("Confirm Password", type="password", key="reg_confirm")
-                
-                if st.form_submit_button("Register"):
-                    if not username.strip():
-                        st.error("Username is required")
-                    elif len(password) < 6:
-                        st.error("Password must be at least 6 characters")
-                    elif password != password_confirm:
-                        st.error("Passwords don't match")
-                    else:
-                        try:
-                            response = httpx.post(
-                                f"{URL}/auth/register",
-                                json={"username": username, "password": password}
-                            )
-                            if response.status_code == 200:
-                                data = response.json()
-                                st.session_state.token = data["access_token"]
-                                st.session_state.username = data["username"]
-                                st.success(f"Account created! Welcome, {data['username']}! ✅")
-                                st.rerun()
-                            else:
-                                error_detail = response.json().get("detail", "Registration failed")
-                                st.error(f"Registration failed: {error_detail}")
-                        except Exception as e:
-                            st.error(f"Connection error: {str(e)}")
-        else:
-            # Login form
-            st.write("**Sign In**")
-            with st.form("login_form"):
-                username = st.text_input("Username", key="login_username")
-                password = st.text_input("Password", type="password", key="login_password")
-                
-                if st.form_submit_button("Login"):
-                    if not username.strip():
-                        st.error("Username is required")
-                    elif not password:
-                        st.error("Password is required")
-                    else:
-                        try:
-                            response = httpx.post(
-                                f"{URL}/auth/login",
-                                json={"username": username, "password": password}
-                            )
-                            if response.status_code == 200:
-                                data = response.json()
-                                st.session_state.token = data["access_token"]
-                                st.session_state.username = data["username"]
-                                st.success(f"Welcome back, {data['username']}! ✅")
-                                st.rerun()
-                            else:
-                                st.error("Invalid username or password")
-                        except Exception as e:
-                            st.error(f"Connection error: {str(e)}")
-    else:
-        # Show logged-in state
-        st.info(f"👤 **{st.session_state.username}**")
-        if st.button("🚪 Logout", use_container_width=True):
-            st.session_state.token = None
-            st.session_state.username = None
-            st.rerun()
-    
-    st.divider()
-    st.caption("System Status: Clinical/Online")
-
-# Redirect to login if not authenticated
-if st.session_state.token is None:
-    st.warning("⚠️ Please log in to access the dashboard")
-    st.stop()
-
-# Main Clinical Dashboard Header
-st.title("Clinical Management Dashboard")
-t1, t2, t3, t4 = st.tabs(["Registry", "Add Patient", "Weight Logs", "AI Analysis"])
-
-# Helper function to make authenticated requests
+# Helper for authenticated API requests
 def make_request(method, endpoint, **kwargs):
-    headers = kwargs.pop("headers", {})
-    headers["Authorization"] = f"Bearer {st.session_state.token}"
-    
+    headers = {"Authorization": f"Bearer {st.session_state.token}"}
     try:
-        if method == "GET":
-            return httpx.get(f"{URL}{endpoint}", headers=headers, follow_redirects=True, **kwargs)
-        elif method == "POST":
-            return httpx.post(f"{URL}{endpoint}", headers=headers, follow_redirects=True, **kwargs)
-        elif method == "PUT":
-            return httpx.put(f"{URL}{endpoint}", headers=headers, follow_redirects=True, **kwargs)
-        elif method == "DELETE":
-            return httpx.delete(f"{URL}{endpoint}", headers=headers, follow_redirects=True, **kwargs)
+        return httpx.request(method, f"{URL}{endpoint}", headers=headers, follow_redirects=True, **kwargs)
     except Exception as e:
-        st.error(f"Connection failed: {str(e)}")
+        st.error(f"Network Error: {e}")
         return None
 
-# Tab 1: View existing patients
+# --- AUTHENTICATION SCREEN ---
+if st.session_state.token is None:
+    st.title("🐾 Welcome to PawHealth Pro")
+    st.subheader("Clinical Staff Portal")
+    
+    auth_tab1, auth_tab2 = st.tabs(["🔐 Login", "📝 Register"])
+    
+    with auth_tab1:
+        with st.form("main_login"):
+            u = st.text_input("Username")
+            p = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Sign In", use_container_width=True)
+            
+            if submit:
+                try:
+                    r = httpx.post(f"{URL}/auth/login", json={"username": u, "password": p})
+                    if r.status_code == 200:
+                        # Update state FIRST
+                        st.session_state.token = r.json()["access_token"]
+                        st.session_state.username = r.json()["username"]
+                        st.success("Access Granted! Refreshing...")
+                        time.sleep(0.5)
+                        st.rerun() # Now it will pass the 'None' check at the top
+                    else:
+                        st.error("Invalid username or password")
+                except httpx.RequestError:
+                    st.error("Auth Service Offline - Check if API is running")
+                    
+    with auth_tab2:
+        with st.form("main_reg"):
+            nu = st.text_input("New Username")
+            np = st.text_input("New Password", type="password")
+            if st.form_submit_button("Create Account", use_container_width=True):
+                try:
+                    r = httpx.post(f"{URL}/auth/register", json={"username": nu, "password": np})
+                    if r.status_code == 200:
+                        st.success("Account created! You can now log in.")
+                    else:
+                        st.error(f"Failed: {r.text}")
+                except httpx.RequestError:
+                    st.error("API unreachable")
+    st.stop()
+
+# --- DASHBOARD LOGIC (Shown only after successful login) ---
+with st.sidebar:
+    st.title("🐾 PawHealth Pro")
+    st.info(f"👤 User: **{st.session_state.username}**")
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state.token = None
+        st.session_state.username = None
+        st.rerun()
+    st.divider()
+    st.caption("System Status: Online")
+
+st.title("🏥 Clinical Management Dashboard")
+t1, t2, t3, t4 = st.tabs(["📊 Registry", "➕ Add Patient", "📈 Weight Telemetry", "🧠 AI Analysis"])
+
+# Tab 1: Registry
 with t1:
-    st.subheader("Patient Registry")
-    if st.button("Refresh Registry"):
-        try:
-            r = make_request("GET", "/dogs")
-            if r and r.status_code == 200:
-                data = r.json()
-                if data:
-                    st.table(pd.DataFrame(data))
-                else:
-                    st.info("No patients registered yet")
-            else:
-                st.error("Failed to fetch registry")
-        except:
-            st.error("Connection to API failed")
-
-# Tab 2: Register a new pet (e.g., Joey the King)
-with t2:
-    st.subheader("Register New Patient")
-    with st.form("add_dog"):
-        name = st.text_input("Name")
-        breed = st.text_input("Breed")
-        ideal_weight = st.number_input("Ideal Weight (kg)", min_value=0.1)
-        age = st.number_input("Age (years)", min_value=0, value=3)
-        
-        if st.form_submit_button("Register"):
-            if name.strip() and breed.strip():
-                data = {
-                    "name": name,
-                    "breed": breed,
-                    "ideal_weight_kg": ideal_weight,
-                    "age": age
-                }
-                r = make_request("POST", "/dogs", json=data)
-                if r and r.status_code in (200, 201):
-                    st.success(f"Patient {name} registered successfully ✅")
-                else:
-                    st.error(f"Registration failed: {r.text if r else 'Unknown error'}")
-            else:
-                st.warning("Please fill in all required fields")
-
-# Tab 3: Log weight updates for health monitoring
-with t3:
-    st.subheader("Log Weight Telemetry")
-    with st.form("log_weight"):
-        dog_id = st.number_input("Patient ID", min_value=1)
-        weight_kg = st.number_input("Current Weight (kg)", min_value=0.1)
-        
-        if st.form_submit_button("Update Weight"):
-            data = {"dog_id": dog_id, "weight_kg": weight_kg}
-            r = make_request("POST", "/health/weight", json=data)
-            if r and r.status_code == 200:
-                st.success("Weight telemetry synchronized ✅")
-            else:
-                st.error(f"Update failed: {r.text if r else 'Unknown error'}")
-
-# Tab 4: AI Sidecar toxicity diagnostics
-with t4:
-    st.subheader("AI Sidecar Analysis")
-    food = st.text_area("Ingredients:")
-    if st.button("Analyze"):
-        # Check for common toxins like chocolate, onions, or grapes
-        if any(x in food.lower() for x in ["onion", "chocolate", "grape", "garlic"]):
-            st.error("🚨 Toxicity detected: Harmful ingredients found")
+    st.subheader("Patient Database")
+    res = make_request("GET", "/dogs/")
+    if res and res.status_code == 200:
+        data = res.json()
+        if data:
+            st.dataframe(pd.DataFrame(data), use_container_width=True, hide_index=True)
         else:
-            st.success("✅ Safe profile: No common hazards detected")
+            st.info("No patients found.")
 
-# Footer for HIT academic submission
+# Tab 2: Add Patient
+with t2:
+    st.subheader("Register New Dog")
+    with st.form("new_dog"):
+        c1, c2 = st.columns(2)
+        with c1:
+            name = st.text_input("Dog Name")
+            breed = st.text_input("Breed")
+        with c2:
+            ideal_w = st.number_input("Ideal Weight (kg)", min_value=0.1, value=11.0)
+            age = st.number_input("Age", min_value=0, value=3)
+        
+        is_fav = st.checkbox("⭐ Mark as Favorite")
+        
+        if st.form_submit_button("Register Patient"):
+            payload = {
+                "name": name, "breed": breed, 
+                "ideal_weight_kg": ideal_w, "age": age,
+                "is_favorite": is_fav
+            }
+            res = make_request("POST", "/dogs/", json=payload)
+            if res and res.status_code in [200, 201]:
+                st.success(f"{name} added successfully!")
+                time.sleep(1)
+                st.rerun()
+
+# Tab 3: Weight Telemetry (Reactive Graph)
+with t3:
+    st.subheader("Weight Tracking & History")
+    
+    res_dogs = make_request("GET", "/dogs/")
+    if res_dogs and res_dogs.status_code == 200 and res_dogs.json():
+        dog_list = res_dogs.json()
+        dog_map = {d["name"]: d["id"] for d in dog_list}
+        
+        selected_name = st.selectbox("Select Patient to view/edit", options=list(dog_map.keys()))
+        current_dog_id = dog_map[selected_name]
+
+        col_input, col_graph = st.columns([1, 2])
+        
+        with col_input:
+            st.write(f"### Update {selected_name}")
+            with st.form("weight_form"):
+                weight_val = st.number_input("Current Weight (kg)", min_value=0.1, value=11.0)
+                entry_date = st.date_input("Measurement Date", value=datetime.now())
+                
+                if st.form_submit_button("Save Telemetry"):
+                    w_payload = {"dog_id": current_dog_id, "weight_kg": weight_val, "date": str(entry_date)}
+                    res_w = make_request("POST", "/health/weight", json=w_payload)
+                    if res_w and res_w.status_code == 200:
+                        st.success("Weight Logged.")
+                        st.rerun()
+        
+        with col_graph:
+            st.write(f"### History for {selected_name}")
+            h_res = make_request("GET", f"/health/weight/{current_dog_id}")
+            if h_res and h_res.status_code == 200:
+                h_data = h_res.json()
+                if h_data:
+                    df_h = pd.DataFrame(h_data)
+                    df_h['date'] = pd.to_datetime(df_h['date'])
+                    df_h = df_h.sort_values('date')
+                    # Fixed date axis display
+                    st.line_chart(data=df_h, x='date', y='weight_kg')
+                else:
+                    st.info("No data entries found for this dog.")
+    else:
+        st.warning("Register a dog record first.")
+
+# Tab 4: AI Analysis (UPDATED SCARY MESSAGE)
+with t4:
+    st.subheader("AI Toxicity Diagnostic")
+    food = st.text_area("Paste ingredients:")
+    if st.button("Analyze"):
+        if any(x in food.lower() for x in ["onion", "chocolate", "grape", "garlic", "raisin", "xylitol"]):
+            st.error("🚨 DANGER: TOXIC FOOD DETECTED! ☠️")
+        else:
+            st.success("✅ Profile Safe: No known toxins found.")
+
 st.divider()
-st.caption("© 2026 PawHealth Pro | HIT EASS Final Project Submission")
-
+st.caption("© 2026 PawHealth Pro | Bar Aizenberg | HIT EASS Final Project")

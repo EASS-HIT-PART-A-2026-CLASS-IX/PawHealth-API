@@ -5,8 +5,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 
 from .database import engine, create_db_and_tables
-from .models import Dog, WeightEntry, WeightAnalysis
-from .routers import dogs, health, system
+# Import ALL models so SQLModel registers them in metadata for table creation
+from .models import (
+    User, UserCreate, UserRead,
+    Dog, DogRead, DogCreate, DogUpdate,
+    WeightEntry, WeightEntryCreate, WeightEntryRead,
+    FeedingLog, FeedingLogCreate, FeedingLogRead,
+    WeightAnalysis
+)
+from .routers import dogs, health, system, auth
 
 processed_keys = set()
 
@@ -45,9 +52,10 @@ async def add_telemetry_headers(request, call_next):
 
 # ============= INCLUDE ROUTERS =============
 
-app.include_router(dogs.router, prefix="/dogs", tags=["Dogs"])
-app.include_router(health.router, prefix="/health", tags=["Health"])
-app.include_router(system.router, tags=["System"])
+app.include_router(auth, prefix="/auth", tags=["Auth"])
+app.include_router(dogs, prefix="/dogs", tags=["Dogs"])
+app.include_router(health, prefix="/health", tags=["Health"])
+app.include_router(system, tags=["System"])
 
 # ============= HEALTH CHECK ENDPOINTS =============
 

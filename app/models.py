@@ -3,6 +3,26 @@ from typing import Optional
 from datetime import datetime
 from pydantic import field_validator
 
+# ============= USER MODELS =============
+
+class User(SQLModel, table=True):
+    """User account for authentication."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(index=True, unique=True)
+    hashed_password: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UserCreate(SQLModel):
+    """Schema for user registration."""
+    username: str
+    password: str
+
+class UserRead(SQLModel):
+    """Schema for reading user info (response)."""
+    id: int
+    username: str
+    created_at: datetime
+
 # ============= DOG MODELS =============
 
 class Dog(SQLModel, table=True):

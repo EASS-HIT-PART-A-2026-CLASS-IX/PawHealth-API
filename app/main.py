@@ -1,36 +1,21 @@
 import uuid
+import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session, select
-
-from .database import engine, create_db_and_tables
-# Import ALL models so SQLModel registers them in metadata for table creation
-from .models import (
-    User, UserCreate, UserRead,
-    Dog, DogRead, DogCreate, DogUpdate,
-    WeightEntry, WeightEntryCreate, WeightEntryRead,
-    FeedingLog, FeedingLogCreate, FeedingLogRead,
-    WeightAnalysis
-)
+from .database import engine, create_db_and_tables, get_session
+from .models import *
 from .routers import dogs, health, system, auth
-
-processed_keys = set()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize database on startup."""
     create_db_and_tables()
     yield
 
-app = FastAPI(
-    title="PawHealth API",
-    version="EX3-Final",
-    description="Smart veterinary management system for dog health",
-    lifespan=lifespan
-)
+app = FastAPI(title="PawHealth Pro API", version="EX3-Final", lifespan=lifespan)
 
-# Add CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,69 +24,64 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ============= MIDDLEWARE =============
+# Serve uploaded photos statically so the frontend can display them
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-@app.middleware("http")
-async def add_telemetry_headers(request, call_next):
-    """Add trace ID to all responses for telemetry tracking."""
-    trace_id = str(uuid.uuid4())
-    response = await call_next(request)
-    response.headers["x-trace-id"] = trace_id
-    response.headers["x-request-id"] = trace_id
-    return response
+# New Clinical Endpoints
+@app.post("/clinic/visits", tags=["Clinical"])
+def add_visit(visit: ClinicVisit, session: Session = Depends(get_session)):
+    session.add(visit)
+    session.commit()
+    session.refresh(visit)
+    return visit
 
-# ============= INCLUDE ROUTERS =============
+@app.get("/clinic/visits/{dog_id}", tags=["Clinical"])
+def get_visits(dog_id: int, session: Session = Depends(get_session)):
+    return session.exec(select(ClinicVisit).where(ClinicVisit.dog_id == dog_id)).all()
+
+@app.post("/clinic/vaccinations", tags=["Clinical"])
+def add_vaccination(vax: Vaccination, session: Session = Depends(get_session)):
+    session.add(vax)
+    session.commit()
+    session.refresh(vax)
+    return vax
+
+@app.get("/clinic/vaccinations/{dog_id}", tags=["Clinical"])
+def get_vaccinations(dog_id: int, session: Session = Depends(get_session)):
+    return session.exec(select(Vaccination).where(Vaccination.dog_id == dog_id)).all()
+
+# File upload endpoint
+@app.post("/dogs/{dog_id}/photo", tags=["Dogs"])
+async def upload_dog_photo(dog_id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
+    """Upload a photo for a dog profile."""
+    dog = session.get(Dog, dog_id)
+    if not dog:
+        raise HTTPException(status_code=404, detail="Dog not found")
+    
+    # Create uploads directory if it doesn't exist
+    os.makedirs("uploads", exist_ok=True)
+    
+    # Save file with unique name
+    filename = f"dog_{dog_id}_{uuid.uuid4().hex}.jpg"
+    filepath = os.path.join("uploads", filename)
+    
+    with open(filepath, "wb") as buffer:
+        buffer.write(await file.read())
+    
+    # Update dog with photo filename
+    dog.photo_filename = filename
+    session.add(dog)
+    session.commit()
+    session.refresh(dog)
+    
+    return {"filename": filename, "dog_id": dog_id}
 
 app.include_router(auth, prefix="/auth", tags=["Auth"])
 app.include_router(dogs, prefix="/dogs", tags=["Dogs"])
 app.include_router(health, prefix="/health", tags=["Health"])
 app.include_router(system, tags=["System"])
 
-# ============= HEALTH CHECK ENDPOINTS =============
-
-@app.get("/health")
 @app.get("/healthz")
 async def health_check():
-    """System health check endpoint."""
-    return {"status": "healthy", "version": "EX3-Final"}
-
-# ============= WEIGHT ANALYSIS ENDPOINT =============
-
-@app.get("/analysis/{dog_id}")
-async def get_weight_analysis(dog_id: int):
-    """Get weight analysis and recommendations for a dog.
-    
-    This endpoint demonstrates the domain logic for weight management:
-    - Calculates variance from ideal weight
-    - Provides personalized recommendations
-    - Special handling for edge cases (e.g., 11kg dog with 10kg target)
-    """
-    with Session(engine) as session:
-        dog = session.get(Dog, dog_id)
-        if not dog:
-            return {"error": "Dog not found", "dog_id": dog_id}
-        
-        # Get latest weight
-        latest_weight = session.exec(
-            select(WeightEntry)
-            .where(WeightEntry.dog_id == dog_id)
-            .order_by(WeightEntry.date.desc())
-        ).first()
-        
-        if not latest_weight:
-            return {"error": "No weight data found", "dog_id": dog_id}
-        
-        # Generate analysis
-        analysis = WeightAnalysis.from_dog_and_weight(dog, latest_weight.weight_kg)
-        return analysis.model_dump()
-
-# ============= AI FOOD ANALYSIS ENDPOINT =============
-
-@app.post("/dogs/analyze-food")
-async def analyze_food(dog_breed: str, food: str):
-    """Analyze if a food is safe for a dog breed.
-    
-    In production, this would call the sidecar AI service.
-    """
-    return {"is_safe": True, "advice": f"For a {dog_breed}, {food} is safe."}
-
+    return {"status": "healthy"}

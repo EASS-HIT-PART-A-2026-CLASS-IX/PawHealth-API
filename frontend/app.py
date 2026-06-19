@@ -74,7 +74,7 @@ with st.sidebar:
         st.rerun()
 
 st.title("🏥 Clinical Management Dashboard")
-tabs = st.tabs(["📊 Registry", "➕ Add Patient", "📈 Weight", "📊 Analysis", "🩺 Visits", "💉 Vaccines", "🚨 AI Analysis"])
+tabs = st.tabs(["📊 Registry", "➕ Add Patient", "📈 Weight", "📊 Analysis", "🩺 Visits", "💉 Vaccines"])
 
 # --- TAB 1: REGISTRY ---
 with tabs[0]:
@@ -438,11 +438,3 @@ with tabs[5]:
             else:
                 st.session_state.edit_vac_id = None
 
-# --- TAB 7: AI TOXIC SCAN ---
-with tabs[6]:
-    food = st.text_area("Input Ingredients:")
-    if st.button("Run Toxicity Scan"):
-        toxic = ["onion", "chocolate", "garlic", "grape", "raisin", "xylitol"]
-        found = [i for i in toxic if i in food.lower()]
-        if found: st.error(f"🚨 ALERT: TOXIC INGREDIENTS DETECTED: {', '.join(found)}! ☠️")
-        else: st.success("✅ Clean Profile: No hazardous ingredients identified.")

@@ -66,10 +66,29 @@ docker compose up -d --build
 *   **System Health Monitor:** http://localhost:8000/healthz
 
 ### Option 2: Local Development
+Run each service in a separate terminal:
+
+**Terminal 1 — Backend API:**
 ~~~bash
 uv sync
 uv run uvicorn app.main:app --reload
 ~~~
+
+**Terminal 2 — Sidecar:**
+~~~bash
+pip install fastapi uvicorn
+cd sidecar && uvicorn main:app --port 8001 --reload
+~~~
+
+**Terminal 3 — Frontend:**
+~~~bash
+pip install streamlit httpx pandas
+streamlit run frontend/app.py
+~~~
+
+*   **Management Dashboard:** http://localhost:8501
+*   **Interactive API Docs:** http://localhost:8000/docs
+*   **System Health Monitor:** http://localhost:8000/healthz
 
 ## 🧪 Running Tests
 ~~~bash

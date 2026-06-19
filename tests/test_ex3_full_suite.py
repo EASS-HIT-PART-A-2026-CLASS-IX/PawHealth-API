@@ -61,6 +61,17 @@ def test_ai_food_analysis(client):
     assert "is_safe" in data
     assert "advice" in data
 
+# Enhancement: CSV Export
+def test_csv_export_data(client):
+    """Registry endpoint returns all fields needed for CSV export."""
+    client.post("/dogs", json={"name": "ExportDog", "breed": "Beagle", "age": 2, "ideal_weight_kg": 12.0})
+    response = client.get("/dogs")
+    assert response.status_code == 200
+    dogs = response.json()
+    assert len(dogs) >= 1
+    required_fields = {"id", "name", "breed", "age", "ideal_weight_kg", "is_favorite"}
+    assert required_fields.issubset(dogs[0].keys())
+
 # ============= FULL-STACK INTEGRATION TESTS =============
 
 def test_full_dog_lifecycle(client):

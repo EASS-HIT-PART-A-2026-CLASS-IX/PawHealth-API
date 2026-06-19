@@ -151,6 +151,13 @@ with tabs[0]:
                             st.rerun()
                         else:
                             st.error(f"Update failed ({r.status_code if r else 'no response'}) - {r.text if r else ''}")
+        st.divider()
+        if st.button("⬇️ Export Registry as CSV"):
+            import io
+            df = pd.DataFrame(dog_list)
+            cols = [c for c in ["id","name","breed","age","current_weight_kg","ideal_weight_kg","is_favorite","medical_history"] if c in df.columns]
+            csv_bytes = df[cols].to_csv(index=False).encode()
+            st.download_button("Download CSV", data=csv_bytes, file_name="pawhealth_registry.csv", mime="text/csv")
     else: st.info("Patient registry is empty.")
 
 # --- TAB 2: ADD PATIENT ---

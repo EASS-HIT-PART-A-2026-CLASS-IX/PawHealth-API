@@ -76,7 +76,7 @@ uv run uvicorn app.main:app --reload
 
 **Terminal 2 — Sidecar:**
 ~~~bash
-pip install fastapi uvicorn
+pip install fastapi uvicorn anthropic
 cd sidecar && uvicorn main:app --port 8001 --reload
 ~~~
 
@@ -97,7 +97,7 @@ uv run pytest tests/ -v
 
 ## 🤖 AI Assistance
 
-This project was developed in collaboration with **Gemini (Google)**. AI tools were utilized for architectural design, SQLModel logic optimization, and generating the comprehensive 32-test suite.
+This project was developed in collaboration with **Claude (Anthropic)** and **Gemini (Google)**. AI tools were utilized for architectural design, SQLModel logic optimization, and generating the comprehensive 32-test suite.
 
 *All AI-generated code was manually reviewed, modified to fit HIT course requirements, and verified through local integration tests.*
 

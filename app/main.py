@@ -33,6 +33,14 @@ app.add_middleware(
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+@app.middleware("http")
+async def telemetry_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["x-trace-id"] = uuid.uuid4().hex
+    response.headers["x-request-id"] = uuid.uuid4().hex
+    response.headers["x-ratelimit-limit"] = "100"
+    return response
+
 # --- CLINICAL ENDPOINTS (CRUD) ---
 
 @app.post("/clinic/visits", tags=["Clinical"])

@@ -21,7 +21,7 @@ All four containers should show `(healthy)` or `Up`.
 ```bash
 curl -i http://localhost:8000/healthz
 ```
-Expected: `200 OK` with `x-trace-id` and `x-request-id` headers.
+Expected: `200 OK` with `x-trace-id`, `x-request-id`, and `x-ratelimit-limit` headers on every response.
 
 ## Verify Redis is accepting connections
 ```bash

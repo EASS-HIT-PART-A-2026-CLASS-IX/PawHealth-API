@@ -38,7 +38,7 @@ def test_idempotency_enforcement(client):
     dog_id = dog_response.json()["id"]
     
     # Create token
-    token = create_access_token({"sub": "test_user"})
+    token = create_access_token({"sub": "test_user", "scope": "pet_owner"})
     headers = {
         "Authorization": f"Bearer {token}",
         "X-Idempotency-Key": "unique-key-789"

@@ -1,16 +1,46 @@
-# Deployment Runbook (EX3)
+# Compose Runbook — PawHealth Pro
 
-## Local Launch
-1. Ensure Docker Desktop is running.
-2. Run `docker compose up -d --build`.
-3. Verify services are up: `docker compose ps`.
+## Prerequisites
+- Docker Desktop running
+- Ports 6379, 8000, 8001, 8501 free
 
-## Health Verification
-Run the following to verify the API and Trace ID propagation:
-`curl -i http://localhost:8000/healthz`
+## Launch the full stack
+```bash
+docker compose up -d --build
+```
 
-## Telemetry
-The system uses the `x-trace-id` header to track requests across the FastAPI backend and the Streamlit frontend.
+Services start in dependency order: Redis → API → Frontend. The sidecar starts in parallel.
 
-## Security
-Endpoints under `/dogs/{id}/refresh` require a Bearer token. Unauthorized requests will return a `401`.
+## Verify all services are healthy
+```bash
+docker compose ps
+```
+All four containers should show `(healthy)` or `Up`.
+
+## Verify API health and telemetry headers
+```bash
+curl -i http://localhost:8000/healthz
+```
+Expected: `200 OK` with `x-trace-id` and `x-request-id` headers.
+
+## Verify Redis is accepting connections
+```bash
+docker compose exec redis redis-cli ping
+```
+Expected: `PONG`
+
+## Run the async refresh worker (Session 09)
+```bash
+uv run python scripts/refresh.py
+```
+The script connects to Redis, writes idempotency keys, then calls the API concurrently (max 3 in-flight).
+
+## Run the test suite
+```bash
+uv run pytest tests/ -v
+```
+
+## Tear down
+```bash
+docker compose down
+```

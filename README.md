@@ -4,6 +4,10 @@
 [![SQLModel](https://img.shields.io/badge/ORM-SQLModel-blue?logo=python&logoColor=white)](https://sqlmodel.tiangolo.com)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org)
 
+## 🎬 Demo
+
+[![PawHealth Pro Demo](https://img.youtube.com/vi/J_IkQ-YPioA/0.jpg)](https://youtu.be/J_IkQ-YPioA)
+
 **PawHealth Pro** is an enterprise-grade backend solution for comprehensive pet healthcare management. Developed as part of the **EASS-HIT 2026** course, this system provides a robust API for tracking dog profiles, weight metrics, and medical history with strict data validation and clinical-grade health analysis.
 
 ## 🌟 Key Features
